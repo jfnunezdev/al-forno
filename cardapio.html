@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12100e">
+<meta name="description" content="Cardápio digital AL FORNO - pizzaria rústica estilo bistrô">
+<title>AL FORNO - Cardápio</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-main:#15110e;
+  --bg-card:#1a1512;
+  --accent-color:#d48b32;
+  --accent-hover:#e09f47;
+  --accent-rgb:212,139,50;
+  --accent-contrast:#12100e;
+  --text-main:#f5f2eb;
+  --text-muted:#b5aca3;
+  --border-color:#362c25;
+  --bg-elevated:#171310;
+  --success:#34d399;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background-color:var(--bg-main)}
+html,body{
+  color:var(--text-main);font-family:'Inter',sans-serif;font-size:16px;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+body{
+  background-color:#3c281a;
+  background-image:linear-gradient(rgba(74,51,34,.82),rgba(60,40,26,.88)),url('wood.svg');
+  background-size:cover;
+  background-attachment:fixed;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::selection{background:rgba(var(--accent-rgb),.35);color:var(--text-main)}
+
+/* Header */
+.header{
+  position:sticky;top:0;z-index:50;
+  background:linear-gradient(180deg,rgba(18,16,14,.96),rgba(18,16,14,.86));
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-color);
+  padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.brand{display:flex;flex-direction:column}
+.brand h1{font-family:'Playfair Display',serif;font-size:22px;letter-spacing:2px;color:var(--text-main)}
+.brand span{font-size:11px;color:var(--accent-color);letter-spacing:2px;text-transform:uppercase}
+.status{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--success)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
+.mesa-badge{background:var(--accent-color);color:var(--accent-contrast);padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;letter-spacing:.3px}
+
+/* Hero */
+.hero{padding:24px 18px 8px}
+.hero h2{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:6px;color:var(--text-main)}
+.hero p{color:var(--text-muted);font-size:14px;line-height:1.5}
+
+/* Categories */
+.cats{display:flex;gap:10px;padding:14px 18px;overflow-x:auto;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:0 0 auto;padding:8px 16px;border-radius:20px;border:1px solid var(--border-color);font-size:13px;color:var(--text-muted);background:var(--bg-card);transition:.2s}
+.cat:hover{border-color:rgba(var(--accent-rgb),.45);color:var(--text-main)}
+.cat.active{background:var(--accent-color);border-color:var(--accent-color);color:var(--accent-contrast);font-weight:600}
+
+/* Grid */
+.section{padding:8px 18px 24px}
+.section-title{font-family:'Playfair Display',serif;font-size:20px;margin:18px 0 12px;color:var(--accent-color);letter-spacing:.5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{
+  background-color:rgba(26,21,18,.9);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  border-radius:16px;overflow:hidden;
+  border:1px solid #362c25;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;
+}
+.card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(var(--accent-rgb),.35);
+  box-shadow:0 14px 32px rgba(0,0,0,.55),0 0 0 1px rgba(var(--accent-rgb),.12) inset;
+}
+.card-img{position:relative;width:100%;height:160px;max-height:180px;overflow:hidden;background:linear-gradient(135deg,var(--bg-card),var(--bg-main));display:flex;align-items:center;justify-content:center}
+.card-img img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.card:hover .card-img img{transform:scale(1.05)}
+.card-img .placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--accent-color);text-align:center;padding:12px}
+.card-img .placeholder .icon{font-size:44px;opacity:.55}
+.card-img .placeholder .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)}
+.card-img.has-img .placeholder{display:none}
+.card-img.no-img img{display:none}
+.card-body{padding:14px}
+.card-name{font-family:'Playfair Display',serif;font-size:17px;margin-bottom:4px;color:var(--text-main)}
+.card-desc{font-size:13px;color:var(--text-muted);line-height:1.4;margin-bottom:10px;min-height:36px}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.price{font-weight:700;color:var(--accent-color);font-size:16px;letter-spacing:.3px}
+.add-btn{
+  background:var(--accent-color);color:var(--accent-contrast);
+  padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;
+  transition:background .2s,transform .15s,box-shadow .2s;
+  box-shadow:0 2px 8px rgba(var(--accent-rgb),.18);
+}
+.add-btn:hover{background:var(--accent-hover);box-shadow:0 4px 14px rgba(var(--accent-rgb),.32)}
+.add-btn:active{transform:scale(.96)}
+
+/* Cart floating */
+.cart-fab{
+  position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:60;
+  background:var(--accent-color);color:var(--accent-contrast);
+  padding:14px 20px;border-radius:50px;
+  display:flex;align-items:center;gap:10px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 12px 30px rgba(var(--accent-rgb),.38);
+  font-weight:700;font-size:14px;cursor:pointer;
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.cart-fab:hover{background:var(--accent-hover);transform:translateY(-2px);box-shadow:0 16px 36px rgba(var(--accent-rgb),.46)}
+.cart-fab:active{transform:translateY(0) scale(.98)}
+.cart-count{background:rgba(18,16,14,.85);color:var(--accent-color);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+
+/* Cart drawer */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:70;display:none}
+.drawer-overlay.open{display:block}
+.drawer{position:fixed;bottom:0;left:0;right:0;z-index:80;background:linear-gradient(180deg,rgba(23,19,16,.96),rgba(28,24,21,.96));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--border-color);border-radius:20px 20px 0 0;padding:20px;max-height:80vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s;box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+.drawer.open{transform:translateY(0)}
+.drawer h3{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:14px;color:var(--text-main)}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);gap:10px}
+.cart-item .name{font-size:14px;flex:1;color:var(--text-main)}
+.cart-item .qty{display:flex;align-items:center;gap:8px}
+.qty button{width:26px;height:26px;border-radius:6px;background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main);transition:border-color .2s,color .2s}
+.qty button:hover{border-color:var(--accent-color);color:var(--accent-color)}
+.qty span{min-width:18px;text-align:center;color:var(--text-main)}
+.cart-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:16px 0;color:var(--accent-color)}
+.checkout-btn{width:100%;padding:14px;border-radius:12px;background:var(--accent-color);color:var(--accent-contrast);font-weight:700;font-size:15px;transition:background .2s,box-shadow .2s}
+.checkout-btn:hover{background:var(--accent-hover);box-shadow:0 8px 24px rgba(var(--accent-rgb),.32)}
+.close-drawer{position:absolute;top:14px;right:18px;font-size:24px;color:var(--text-muted);z-index:5;cursor:pointer;padding:4px 8px;transition:color .2s}
+.close-drawer:hover{color:var(--text-main)}
+
+/* Success screen */
+.success{display:none;position:fixed;inset:0;background:rgba(18,16,14,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:90;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.success .close-x{position:absolute;top:18px;right:22px;font-size:28px;color:var(--text-muted);cursor:pointer;z-index:2}
+.success.show{display:flex}
+.success .icon{font-size:72px;margin-bottom:16px}
+.success h2{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:8px;color:var(--accent-color)}
+.success p{color:var(--text-muted);max-width:320px;line-height:1.5}
+.success button{margin-top:24px;padding:12px 24px;border-radius:10px;background:var(--accent-color);color:var(--accent-contrast);font-weight:700;transition:background .2s}
+.success button:hover{background:var(--accent-hover)}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+}
+@media(max-width:480px){
+  .header{padding:12px 14px;gap:8px}
+  .brand h1{font-size:19px;letter-spacing:1.5px}
+  .brand span{font-size:10px;letter-spacing:1.5px}
+  .status{font-size:11px}
+  .mesa-badge{padding:5px 10px;font-size:12px}
+  .hero{padding:20px 14px 6px}
+  .hero h2{font-size:23px}
+  .cats{padding:12px 14px}
+  .section{padding:8px 14px 24px}
+  .grid{grid-template-columns:1fr}
+  .card-img{height:160px;max-height:180px}
+  .cart-fab{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));padding:12px 18px}
+  .drawer{padding:18px 14px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <h1>AL FORNO</h1>
+    <span>Pizzaria Rústica</span>
+  </div>
+  <div class="status">
+    <span class="dot"></span>
+    <span>ABERTO</span>
+  </div>
+  <div class="mesa-badge" id="mesaBadge">Mesa 1</div>
+</header>
+
+<section class="hero">
+  <h2>Cardápio Digital</h2>
+  <p>Escolha suas pizzas e bebidas artesanais. Envie o pedido direto para o salão.</p>
+</section>
+
+<div class="cats" id="cats">
+  <button class="cat active" data-cat="todas">Todas</button>
+  <button class="cat" data-cat="pizzas">Pizzas</button>
+  <button class="cat" data-cat="cervejas">Cervejas</button>
+  <button class="cat" data-cat="bebidas">Bebidas</button>
+</div>
+
+<main id="content"></main>
+
+<button class="cart-fab" id="cartFab" type="button" aria-label="Abrir carrito">
+  <span>Carrinho</span>
+  <span class="cart-count" id="cartCount">0</span>
+</button>
+
+<div class="drawer-overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <button class="close-drawer" id="closeDrawer" type="button" aria-label="Fechar carrinho">&times;</button>
+  <h3>Seu Pedido</h3>
+  <div id="cartItems"></div>
+  <div class="cart-total"><span>Total</span><span id="cartTotal">R$ 0,00</span></div>
+  <button class="checkout-btn" id="checkoutBtn">Enviar Pedido ao Salão</button>
+</div>
+
+<div class="success" id="success">
+  <button class="close-x" id="closeSuccess" type="button" onclick="document.getElementById('success').classList.remove('show')" aria-label="Fechar">&times;</button>
+  <div class="icon">🍕</div>
+  <h2>Pedido Enviado!</h2>
+  <p>Seu pedido foi enviado ao salão. Em breve será preparado no forno.</p>
+  <button id="newOrder">Fazer novo pedido</button>
+</div>
+
+<script>
+// ===================== DADOS DO CARDÁPIO =====================
+const produtos = [
+  // Pizzas
+  {id:1,cat:'pizzas',nome:'Margherita',desc:'Molho de tomate San Marzano, mozzarella di bufala, manjericão fresco e azeite extra virgem.',preco:48.00,img:'img/prod-1.jpg'},
+  {id:2,cat:'pizzas',nome:'Pepperoni',desc:'Molho de tomate, mozzarella e pepperoni artesanal com orégano.',preco:52.00,img:'img/prod-2.jpg'},
+  {id:3,cat:'pizzas',nome:'Quattro Formaggi',desc:'Mozzarella, gorgonzola, parmesão e provolone com fio de mel.',preco:58.00,img:'img/prod-3.jpg'},
+  {id:4,cat:'pizzas',nome:'Prosciutto e Funghi',desc:'Presunto parma, cogumelos frescos, mozzarella e rúcula.',preco:62.00,img:'img/prod-4.jpg'},
+  {id:5,cat:'pizzas',nome:'Calabresa',desc:'Calabresa artesanal, cebola roxa, mozzarella e azeitonas.',preco:50.00,img:'img/prod-5.jpg'},
+  {id:6,cat:'pizzas',nome:'Portuguesa',desc:'Presunto, ovos, cebola, azeitonas, ervilha e mozzarella.',preco:54.00,img:'img/prod-6.jpg'},
+  {id:7,cat:'pizzas',nome:'Frango com Catupiry',desc:'Frango desfiado, catupiry original, milho e mozzarella.',preco:52.00,img:'img/prod-7.jpg'},
+  {id:8,cat:'pizzas',nome:'Lombo Canadense',desc:'Lombo, catupiry, cebola e mozzarella.',preco:56.00,img:'img/prod-8.jpg'},
+  {id:9,cat:'pizzas',nome:'Napolitana',desc:'Tomate, mozzarella, anchovas, alcaparras e azeitonas.',preco:58.00,img:'img/prod-9.jpg'},
+  {id:10,cat:'pizzas',nome:'Diavola',desc:'Salame picante, pimenta calabresa, mozzarella e mel picante.',preco:60.00,img:'img/prod-10.jpg'},
+  {id:11,cat:'pizzas',nome:'Carbonara',desc:'Guanciale, ovo, pecorino e pimenta preta.',preco:64.00,img:'img/prod-11.jpg'},
+  {id:12,cat:'pizzas',nome:'Trufada',desc:'Cogumelos trufados, trufa negra, mozzarella e parmesão.',preco:78.00,img:'img/prod-12.jpg'},
+  {id:13,cat:'pizzas',nome:'Vegetariana',desc:'Abobrinha, berinjela, pimentão, cebola e tomate cereja.',preco:50.00,img:'img/prod-13.jpg'},
+  {id:14,cat:'pizzas',nome:'Bacon e Cheddar',desc:'Bacon crocante, cheddar e cebola caramelizada.',preco:56.00,img:'img/prod-14.jpg'},
+  {id:15,cat:'pizzas',nome:'Doce de Nutella',desc:'Nutella, morangos, banana e açúcar de confeiteiro.',preco:46.00,img:'img/prod-15.jpg'},
+  // Cervejas
+  {id:16,cat:'cervejas',nome:'Heineken 600ml',desc:'Cerveja lager premium holandesa, sabor equilibrado e refrescante.',preco:18.00,img:'img/prod-16.jpg'},
+  {id:17,cat:'cervejas',nome:'Corona 355ml',desc:'Cerveja mexicana leve, ideal com limão.',preco:16.00,img:'img/prod-17.jpg'},
+  {id:18,cat:'cervejas',nome:'Stella Artois 600ml',desc:'Cerveja belga de sabor refinado e aroma floral.',preco:17.00,img:'img/prod-18.jpg'},
+  {id:19,cat:'cervejas',nome:'Budweiser 600ml',desc:'American lager clássica, leve e cristalina.',preco:15.00,img:'img/prod-19.jpg'},
+  {id:20,cat:'cervejas',nome:'Eisenbahn Pilsen 600ml',desc:'Pilsen brasileira de alta fermentação, aroma de lúpulo.',preco:16.00,img:'img/prod-20.jpg'},
+  // Bebidas
+  {id:21,cat:'bebidas',nome:'Coca-Cola Lata 350ml',desc:'Refrigerante clássico gelado.',preco:8.00,img:'img/prod-21.jpg'},
+  {id:22,cat:'bebidas',nome:'Guaraná Antarctica 350ml',desc:'Refrigerante brasileiro refrescante.',preco:7.00,img:'img/prod-22.jpg'},
+  {id:23,cat:'bebidas',nome:'Sprite Lata 350ml',desc:'Refrigerante de limão sem cafeína.',preco:7.00,img:'img/prod-23.jpg'},
+  {id:24,cat:'bebidas',nome:'Água Mineral 500ml',desc:'Água mineral sem gás.',preco:5.00,img:'img/prod-24.jpg'},
+  {id:25,cat:'bebidas',nome:'Suco de Laranja Natural',desc:'Suco natural de laranja espremido na hora.',preco:12.00,img:'img/prod-25.jpg'},
+];
+
+// ===================== ESTADO =====================
+const params = new URLSearchParams(location.search);
+const mesa = params.get('mesa') || '1';
+document.getElementById('mesaBadge').textContent = 'Mesa ' + mesa;
+
+let cart = JSON.parse(localStorage.getItem('alforno_cart_mesa_'+mesa) || '[]');
+let filtro = 'todas';
+
+function saveCart(){ localStorage.setItem('alforno_cart_mesa_'+mesa, JSON.stringify(cart)); }
+
+function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
+
+// ===================== RENDER =====================
+const content = document.getElementById('content');
+function render(){
+  const cats = filtro==='todas' ? produtos : produtos.filter(p=>p.cat===filtro);
+  const groups = {};
+  cats.forEach(p=>{ (groups[p.cat]=groups[p.cat]||[]).push(p); });
+  const catNames = {pizzas:'Pizzas Artesanais',cervejas:'Cervejas',bebidas:'Refrigerantes e Bebidas'};
+  let html='';
+  Object.keys(groups).forEach(c=>{
+    html += `<section class="section"><h3 class="section-title">${catNames[c]}</h3><div class="grid">`;
+    groups[c].forEach(p=>{
+      html += `
+        <article class="card">
+          <div class="card-img has-img" data-fallback="${p.nome}">
+            <img src="${p.img}" alt="${p.nome}" loading="lazy" onerror="this.parentElement.classList.remove('has-img');this.parentElement.classList.add('no-img');">
+            <div class="placeholder"><div class="icon">🍕</div><div class="label">${p.nome}</div></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">${p.nome}</div>
+            <div class="card-desc">${p.desc}</div>
+            <div class="card-foot">
+              <span class="price">${fmt(p.preco)}</span>
+              <button class="add-btn" onclick="addItem(${p.id})">+ Adicionar</button>
+            </div>
+          </div>
+        </article>`;
+    });
+    html += '</div></section>';
+  });
+  content.innerHTML = html;
+}
+
+document.querySelectorAll('.cat').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    filtro = b.dataset.cat;
+    render();
+  });
+});
+
+// ===================== CARRINHO =====================
+function addItem(id){
+  const p = produtos.find(x=>x.id===id);
+  const ex = cart.find(x=>x.id===id);
+  if(ex) ex.qtd++; else cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1});
+  saveCart(); updateCart();
+}
+function changeQty(id,delta){
+  const it = cart.find(x=>x.id===id);
+  if(!it) return;
+  it.qtd += delta;
+  if(it.qtd<=0) cart = cart.filter(x=>x.id!==id);
+  saveCart(); updateCart(); renderCart();
+}
+function updateCart(){
+  const count = cart.reduce((s,i)=>s+i.qtd,0);
+  document.getElementById('cartCount').textContent = count;
+}
+function renderCart(){
+  const el = document.getElementById('cartItems');
+  if(cart.length===0){ el.innerHTML='<p style="color:var(--text-muted);padding:20px 0">Carrinho vazio.</p>'; }
+  else {
+    el.innerHTML = cart.map(i=>`
+      <div class="cart-item">
+        <div class="name">${i.nome}</div>
+        <div class="qty">
+          <button onclick="changeQty(${i.id},-1)">-</button>
+          <span>${i.qtd}</span>
+          <button onclick="changeQty(${i.id},1)">+</button>
+        </div>
+        <div>${fmt(i.preco*i.qtd)}</div>
+      </div>`).join('');
+  }
+  const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
+  document.getElementById('cartTotal').textContent = fmt(total);
+}
+
+const fab = document.getElementById('cartFab');
+const drawer = document.getElementById('drawer');
+const overlay = document.getElementById('overlay');
+fab.addEventListener('click',()=>{ renderCart(); drawer.classList.add('open'); overlay.classList.add('open'); });
+document.getElementById('closeDrawer').addEventListener('click',closeDrawer);
+overlay.addEventListener('click',closeDrawer);
+function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
+
+document.getElementById('checkoutBtn').addEventListener('click',()=>{
+  if(cart.length===0){ alert('Adicione itens ao carrinho.'); return; }
+  const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
+  const pedido = {
+    id: 'PED-'+Date.now(),
+    mesa: mesa,
+    itens: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
+    total: total,
+    horario: new Date().toLocaleString('pt-BR'),
+    status: 'Recebido'
+  };
+  const pedidos = JSON.parse(localStorage.getItem('alforno_pedidos') || '[]');
+  pedidos.unshift(pedido);
+  localStorage.setItem('alforno_pedidos', JSON.stringify(pedidos));
+  cart = [];
+  saveCart(); updateCart();
+  closeDrawer();
+  document.getElementById('success').classList.add('show');
+});
+document.getElementById('newOrder').addEventListener('click',()=>{
+  document.getElementById('success').classList.remove('show');
+});
+
+// init
+render(); updateCart();
+
+// Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then((reg)=>{ reg.update(); }).catch(()=>{});
+}
+</script>
+</body>
+</html>

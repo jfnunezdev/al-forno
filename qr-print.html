@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AL FORNO - QR Code Mesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-main:#15110e;
+  --bg-card:#1a1512;
+  --accent-color:#d48b32;
+  --accent-hover:#e09f47;
+  --accent-rgb:212,139,50;
+  --accent-contrast:#12100e;
+  --accent-ink:#9a5f1c;
+  --text-main:#f5f2eb;
+  --text-muted:#b5aca3;
+  --border-color:#362c25;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background-color:var(--bg-main)}
+html,body{
+  color:var(--text-main);font-family:'Inter',sans-serif;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+}
+body{
+  background-color:#3c281a;
+  background-image:linear-gradient(rgba(74,51,34,.82),rgba(60,40,26,.88)),url('wood.svg');
+  background-size:cover;
+  background-attachment:fixed;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+.card{background:#fbf7ef;color:#1c1815;border-radius:24px;padding:40px 32px;text-align:center;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);border:1px solid rgba(var(--accent-rgb),.25)}
+.brand{font-family:'Playfair Display',serif;font-size:34px;letter-spacing:2px;color:var(--accent-ink);margin-bottom:4px}
+.sub{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#8a6a3f;margin-bottom:24px}
+.mesa{font-family:'Playfair Display',serif;font-size:26px;margin:16px 0 8px}
+.qr{background:#fff;padding:12px;border-radius:12px;display:inline-block;border:2px solid #eee}
+.qr img{width:260px;height:260px;display:block}
+.hint{font-size:13px;color:#555;margin-top:18px;line-height:1.5}
+.controls{margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.controls button,.controls input{padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-main);color:var(--text-main);font-size:14px}
+.controls button{background:var(--accent-color);border-color:var(--accent-color);color:var(--accent-contrast);cursor:pointer;font-weight:700;transition:.2s}
+.controls button:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.controls input{width:70px;text-align:center;background:#fff;color:var(--bg-main)}
+.controls input:focus{outline:none;border-color:var(--accent-color)}
+@media print{
+  html,body{background:#fff}
+  .controls{display:none}
+  .card{box-shadow:none;border:1px solid #ddd}
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">AL FORNO</div>
+  <div class="sub">Pizzaria Rústica</div>
+  <div class="mesa" id="mesaLabel">Mesa 1</div>
+  <div class="qr"><img id="qrImg" src="" alt="QR Code"></div>
+  <p class="hint">Escaneie o código com a câmera do celular para abrir o cardápio digital da sua mesa.</p>
+  <div class="controls">
+    <button onclick="changeMesa(-1)">-</button>
+    <input type="number" id="mesaInput" value="1" min="1" onchange="updateQR()">
+    <button onclick="changeMesa(1)">+</button>
+    <button onclick="window.print()">Imprimir</button>
+  </div>
+  <div class="controls" style="margin-top:10px">
+    <input type="text" id="baseUrl" placeholder="http://192.168.0.10:8000" style="width:260px" onchange="saveBase();updateQR()">
+    <span style="font-size:11px;color:#555">URL do servidor (IP do PC na rede)</span>
+  </div>
+</div>
+<script>
+function detectLocalIP(cb){
+  try{
+    const pc = new RTCPeerConnection({iceServers:[]});
+    pc.createDataChannel('');
+    pc.createOffer().then(o=>pc.setLocalDescription(o));
+    pc.onicecandidate = e=>{
+      if(!e || !e.candidate) return;
+      const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if(m && !m[1].startsWith('127.')){ cb(m[1]); pc.close(); }
+    };
+  }catch(e){ cb(''); }
+}
+function getBase(){
+  let b = localStorage.getItem('alforno_baseurl');
+  if(!b){
+    if(location.protocol==='file:'){ b=''; } else { b = location.origin; }
+  }
+  return b;
+}
+function saveBase(){ localStorage.setItem('alforno_baseurl', document.getElementById('baseUrl').value.trim()); }
+function updateQR(){
+  const m = document.getElementById('mesaInput').value || 1;
+  document.getElementById('mesaLabel').textContent = 'Mesa ' + m;
+  let base = document.getElementById('baseUrl').value.trim() || getBase();
+  if(!base){ base = prompt('Informe a URL do servidor (ex: http://192.168.0.10:8000)'); if(base) document.getElementById('baseUrl').value=base; }
+  if(base){ if(!base.endsWith('/')) base+='/'; base = base + 'cardapio.html'; }
+  else { base = window.location.href.split('?')[0].replace('qr-print.html','cardapio.html'); }
+  const url = base.split('?')[0] + '?mesa=' + m;
+  document.getElementById('qrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(url);
+  document.getElementById('baseUrl').value = url.split('cardapio.html')[0];
+}
+window.addEventListener('load', function(){
+  const saved = getBase();
+  if(saved){ document.getElementById('baseUrl').value = saved; updateQR(); return; }
+  detectLocalIP(function(ip){
+    if(ip){ document.getElementById('baseUrl').value = 'http://'+ip+':8000'; }
+    updateQR();
+  });
+  setTimeout(updateQR, 1500);
+});
+function changeMesa(d){
+  const inp = document.getElementById('mesaInput');
+  inp.value = Math.max(1, (+inp.value||1)+d);
+  updateQR();
+}
+</script>
+</body>
+</html>

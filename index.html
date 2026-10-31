@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12100e">
+<title>AL FORNO - Painel Gestor / Caixa</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-main:#15110e;
+  --bg-card:#1a1512;
+  --accent-color:#d48b32;
+  --accent-hover:#e09f47;
+  --accent-rgb:212,139,50;
+  --accent-contrast:#12100e;
+  --text-main:#f5f2eb;
+  --text-muted:#b5aca3;
+  --border-color:#362c25;
+  --bg-elevated:#171310;
+  --success:#34d399;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background-color:var(--bg-main)}
+html,body{
+  color:var(--text-main);font-family:'Inter',sans-serif;min-height:100vh;
+}
+body{
+  background-color:#3c281a;
+  background-image:linear-gradient(rgba(74,51,34,.82),rgba(60,40,26,.88)),url('wood.svg');
+  background-size:cover;
+  background-attachment:fixed;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::selection{background:rgba(var(--accent-rgb),.35);color:var(--text-main)}
+
+.header{padding:18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header h1{font-family:'Playfair Display',serif;font-size:22px;letter-spacing:2px;color:var(--text-main)}
+.header span{font-size:11px;color:var(--accent-color);letter-spacing:2px;text-transform:uppercase}
+.header-actions{display:flex;align-items:center;gap:14px}
+
+.tabs{display:flex;gap:4px;padding:14px 18px;border-bottom:1px solid var(--border-color);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:10px 16px;border-radius:8px;font-size:13px;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border-color);transition:.2s}
+.tab:hover{border-color:rgba(var(--accent-rgb),.45);color:var(--text-main)}
+.tab.active{background:var(--accent-color);color:var(--accent-contrast);border-color:var(--accent-color);font-weight:700}
+
+.section{padding:20px 18px;display:none}
+.section.active{display:block}
+
+/* QR */
+.qr-box{background-color:rgba(26,21,18,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid #362c25;border-radius:16px;padding:20px;max-width:480px;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.qr-box h3{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:12px;color:var(--accent-color)}
+.qr-input{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.qr-input button{width:36px;height:36px;border-radius:8px;background:var(--bg-main);color:var(--text-main);font-size:18px;border:1px solid var(--border-color);transition:.2s}
+.qr-input button:hover{border-color:var(--accent-color);color:var(--accent-color)}
+.qr-input input{flex:1;padding:10px;border-radius:8px;background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main);font-size:16px;text-align:center}
+.qr-input input:focus{outline:none;border-color:var(--accent-color)}
+.qr-preview{background:#fff;padding:16px;border-radius:12px;display:inline-block;margin:12px 0}
+.qr-preview img{width:200px;height:200px}
+.qr-link{font-size:12px;color:var(--text-muted);word-break:break-all;margin:8px 0}
+.qr-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.qr-actions button{padding:10px 14px;border-radius:8px;background:var(--accent-color);color:var(--accent-contrast);font-weight:700;font-size:13px;transition:.2s}
+.qr-actions button:hover{background:var(--accent-hover)}
+
+/* Orders */
+.orders-grid{display:grid;gap:14px}
+.order-card{background-color:rgba(26,21,18,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid #362c25;border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.35);transition:transform .25s,border-color .25s}
+.order-card:hover{transform:translateY(-2px);border-color:rgba(var(--accent-rgb),.35)}
+.order-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.order-id{font-weight:700;color:var(--accent-color)}
+.order-mesa{background:var(--accent-color);color:var(--accent-contrast);padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700}
+.order-time{font-size:12px;color:var(--text-muted)}
+.order-items{border-top:1px solid var(--border-color);padding-top:10px;margin-top:8px}
+.order-item{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;color:var(--text-main)}
+.order-total{display:flex;justify-content:space-between;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);color:var(--accent-color)}
+.status-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.status-btn{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid var(--border-color);color:var(--text-muted);background:var(--bg-main);transition:.2s}
+.status-btn:hover{border-color:rgba(var(--accent-rgb),.45);color:var(--text-main)}
+.status-btn.active{background:var(--accent-color);color:var(--accent-contrast);border-color:var(--accent-color);font-weight:700}
+.empty{color:var(--text-muted);text-align:center;padding:40px}
+
+/* Fechamento */
+.fechamento{background-color:rgba(26,21,18,.9);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid #362c25;border-radius:16px;padding:16px;margin-top:20px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.fechamento h3{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:12px;color:var(--accent-color)}
+.mesa-select{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mesa-chip{padding:8px 14px;border-radius:8px;background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main);font-size:13px;transition:.2s}
+.mesa-chip:hover{border-color:rgba(var(--accent-rgb),.45)}
+.mesa-chip.active{background:var(--accent-color);border-color:var(--accent-color);color:var(--accent-contrast);font-weight:700}
+.bill{font-size:14px;line-height:1.8}
+.bill .row{display:flex;justify-content:space-between}
+.bill .total{font-weight:700;color:var(--accent-color);font-size:18px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)}
+.bill button{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--accent-color);color:var(--accent-contrast);font-weight:700;font-size:13px;transition:.2s}
+.bill button:hover{background:var(--accent-hover)}
+
+@media(max-width:480px){
+  .header{padding:14px;gap:8px}
+  .header h1{font-size:19px;letter-spacing:1.5px}
+  .tabs{padding:12px 14px}
+  .tab{padding:9px 13px;font-size:12px}
+  .section{padding:16px 14px}
+  .order-head{gap:6px}
+  .qr-box,.order-card,.fechamento{padding:14px}
+  .qr-box h3,.fechamento h3{font-size:16px}
+}
+
+/* Ticket de impressão (oculto na tela) */
+.ticket{display:none}
+
+@media print{
+  body.printing-ticket{background:#fff !important;color:#000 !important}
+  body.printing-ticket > *:not(#ticket){display:none !important}
+  body.printing-ticket #ticket{
+    display:block !important;width:72mm;margin:0 auto;padding:0;
+    background:#fff;color:#000;font-family:'Courier New',Courier,monospace;
+    font-size:12px;line-height:1.45;
+  }
+  body.printing-ticket .ticket-head{text-align:center;margin-bottom:8px}
+  body.printing-ticket .ticket-brand{font-size:20px;font-weight:700;letter-spacing:2px}
+  body.printing-ticket .ticket-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase}
+  body.printing-ticket .ticket-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin-top:6px}
+  body.printing-ticket .ticket-sep{border-top:1px dashed #000;margin:6px 0}
+  body.printing-ticket .ticket-item{display:flex;justify-content:space-between;gap:10px;margin:5px 0}
+  body.printing-ticket .ticket-info{display:flex;flex-direction:column;min-width:0}
+  body.printing-ticket .ticket-nome{font-weight:700;word-break:break-word}
+  body.printing-ticket .ticket-unit{font-size:10px;color:#333}
+  body.printing-ticket .ticket-valor{white-space:nowrap;text-align:right}
+  body.printing-ticket .ticket-total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin:6px 0}
+  body.printing-ticket .ticket-foot{text-align:center;font-size:10px;margin-top:8px}
+  body.printing-ticket .ticket-foot .thanks{font-size:12px;font-weight:700;margin-bottom:2px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div>
+    <h1>AL FORNO</h1>
+    <span>Painel Gestor / Caixa</span>
+  </div>
+  <div class="header-actions">
+    <button onclick="copiarCardapioLink()" style="background:var(--bg-card);border:1px solid var(--border-color);padding:8px 12px;border-radius:8px;font-size:12px;color:var(--text-main)">Copiar Link Cardápio</button>
+    <a href="cardapio.html" target="_blank" style="font-size:13px;color:var(--accent-color);font-weight:600">Ver Cardápio ↗</a>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="qr">QR Code por Mesa</button>
+  <button class="tab" data-tab="pedidos">Pedidos em Tempo Real</button>
+  <button class="tab" data-tab="caixa">Fechamento de Conta</button>
+</div>
+
+<!-- QR -->
+<section class="section active" id="tab-qr">
+  <div class="qr-box">
+    <h3>Gerador de QR Code por Mesa</h3>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Defina o número da mesa. O QR aponta para o cardápio digital (cardapio.html).</p>
+    <div class="qr-input">
+      <button id="mesaMinus">-</button>
+      <input type="number" id="mesaInput" value="1" min="1">
+      <button id="mesaPlus">+</button>
+    </div>
+    <div class="qr-preview">
+      <img id="qrImg" src="" alt="QR Code">
+    </div>
+    <div class="qr-link" id="qrLink"></div>
+    <div class="qr-actions">
+      <button onclick="downloadQR()">Baixar QR</button>
+      <button onclick="window.print()">Imprimir</button>
+      <button onclick="copiarCardapioLink()" style="background:var(--bg-main);border:1px solid var(--border-color);color:var(--text-main)">Copiar Link</button>
+    </div>
+  </div>
+</section>
+
+<!-- Pedidos -->
+<section class="section" id="tab-pedidos">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h3 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--accent-color)">Pedidos Recebidos</h3>
+    <button id="refreshBtn" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-main);font-size:13px">Atualizar</button>
+  </div>
+  <div class="orders-grid" id="ordersGrid"></div>
+</section>
+
+<!-- Caixa -->
+<section class="section" id="tab-caixa">
+  <div class="fechamento">
+    <h3>Fechamento de Conta por Mesa</h3>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Selecione a mesa para somar todos os pedidos.</p>
+    <div class="mesa-select" id="mesaChips"></div>
+    <div class="bill" id="billArea"></div>
+  </div>
+</section>
+
+<!-- Ticket exclusivo para impressão -->
+<div id="ticket" class="ticket" aria-hidden="true"></div>
+
+<script>
+// ===================== TABS =====================
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='pedidos') renderOrders();
+    if(t.dataset.tab==='caixa') renderCaixa();
+  });
+});
+
+// ===================== QR & LINK CARDAPIO =====================
+const mesaInput = document.getElementById('mesaInput');
+function getCardapioBaseURL(){
+  let base = localStorage.getItem('alforno_baseurl');
+  if(!base){
+    if(location.protocol==='file:'){ base=''; }
+    else { base = location.origin; }
+  }
+  if(base){
+    if(!base.endsWith('/')) base+='/';
+    return base + 'cardapio.html';
+  }
+  return window.location.href.split('?')[0].replace('index.html','') + 'cardapio.html';
+}
+
+function getCardapioUrlForMesa(m){
+  let base = localStorage.getItem('alforno_baseurl');
+  if(!base){
+    if(location.protocol==='file:'){ base=''; }
+    else { base = location.origin; }
+  }
+  let full;
+  if(base){
+    if(!base.endsWith('/')) base+='/';
+    full = base + 'cardapio.html?mesa=' + m;
+  } else {
+    full = window.location.href.split('?')[0].replace('index.html','cardapio.html') + '?mesa=' + m;
+  }
+  return full;
+}
+
+function updateQR(){
+  const m = mesaInput.value || 1;
+  const full = getCardapioUrlForMesa(m);
+  document.getElementById('qrLink').textContent = full;
+  document.getElementById('qrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(full);
+}
+
+function copiarCardapioLink(){
+  const m = mesaInput.value || 1;
+  const url = getCardapioUrlForMesa(m);
+  navigator.clipboard.writeText(url).then(()=>{
+    alert('Link do cardápio copiado para a área de transferência:\n' + url);
+  }).catch(()=>{
+    prompt('Copie o link abaixo:', url);
+  });
+}
+
+mesaInput.addEventListener('input', updateQR);
+document.getElementById('mesaMinus').addEventListener('click',()=>{ mesaInput.value = Math.max(1, (+mesaInput.value||1)-1); updateQR(); });
+document.getElementById('mesaPlus').addEventListener('click',()=>{ mesaInput.value = (+mesaInput.value||1)+1; updateQR(); });
+function downloadQR(){
+  const img = document.getElementById('qrImg');
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'mesa-'+mesaInput.value+'-cardapio.png';
+  a.click();
+}
+updateQR();
+
+// ===================== PEDIDOS =====================
+const statusList = ['Recebido','Em forno','Pronto','Entregue'];
+function getPedidos(){ return JSON.parse(localStorage.getItem('alforno_pedidos') || '[]'); }
+function savePedidos(p){ localStorage.setItem('alforno_pedidos', JSON.stringify(p)); }
+function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
+
+function renderOrders(){
+  const pedidos = getPedidos();
+  const grid = document.getElementById('ordersGrid');
+  if(pedidos.length===0){ grid.innerHTML='<div class="empty">Nenhum pedido recebido ainda.</div>'; return; }
+  grid.innerHTML = pedidos.map(p=>`
+    <div class="order-card">
+      <div class="order-head">
+        <span class="order-id">${p.id}</span>
+        <span class="order-mesa">Mesa ${p.mesa}</span>
+        <span class="order-time">${p.horario}</span>
+      </div>
+      <div class="order-items">
+        ${p.itens.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>R$ ${(i.preco*i.qtd).toFixed(2).replace('.',',')}</span></div>`).join('')}
+      </div>
+      <div class="order-total"><span>Total</span><span>R$ ${p.total.toFixed(2).replace('.',',')}</span></div>
+      <div class="status-row">
+        ${statusList.map(s=>`<button class="status-btn ${p.status===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function setStatus(id,status){
+  const pedidos = getPedidos();
+  const p = pedidos.find(x=>x.id===id);
+  if(p){ p.status=status; savePedidos(pedidos); renderOrders(); }
+}
+document.getElementById('refreshBtn').addEventListener('click', renderOrders);
+
+// auto refresh
+setInterval(()=>{ if(document.getElementById('tab-pedidos').classList.contains('active')) renderOrders(); }, 3000);
+
+// ===================== CAIXA =====================
+function renderCaixa(){
+  const pedidos = getPedidos();
+  const mesas = [...new Set(pedidos.map(p=>p.mesa))].sort((a,b)=>a-b);
+  const chips = document.getElementById('mesaChips');
+  if(mesas.length===0){ chips.innerHTML='<span style="color:var(--text-muted)">Sem pedidos.</span>'; document.getElementById('billArea').innerHTML=''; return; }
+  chips.innerHTML = mesas.map(m=>`<button class="mesa-chip" data-mesa="${m}" onclick="showBill('${m}')">Mesa ${m}</button>`).join('');
+  showBill(mesas[0]);
+}
+function showBill(mesa){
+  document.querySelectorAll('.mesa-chip').forEach(c=>c.classList.toggle('active', c.dataset.mesa===String(mesa)));
+  const pedidos = getPedidos().filter(p=>String(p.mesa)===String(mesa));
+  const area = document.getElementById('billArea');
+  if(pedidos.length===0){ area.innerHTML=''; return; }
+  const agg = {};
+  pedidos.forEach(p=>p.itens.forEach(i=>{
+    if(!agg[i.nome]) agg[i.nome]={qtd:0,preco:i.preco};
+    agg[i.nome].qtd += i.qtd;
+  }));
+  let html = '<div class="bill">';
+  Object.keys(agg).forEach(n=>{
+    const a = agg[n];
+    html += `<div class="row"><span>${a.qtd}x ${n}</span><span>${fmt(a.preco*a.qtd)}</span></div>`;
+  });
+  const total = pedidos.reduce((s,p)=>s+p.total,0);
+  html += `<div class="total"><span>Total da Mesa ${mesa}</span><span>${fmt(total)}</span></div>`;
+  html += `<button onclick="fecharConta('${mesa}')">Fechar Conta e Imprimir</button>`;
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+let mesaParaFechar = null;
+
+function renderTicket(mesa, pedidos){
+  const agg = {};
+  pedidos.forEach(p=>p.itens.forEach(i=>{
+    if(!agg[i.nome]) agg[i.nome]={qtd:0,preco:i.preco};
+    agg[i.nome].qtd += i.qtd;
+  }));
+  const agora = new Date();
+  const data = agora.toLocaleDateString('pt-BR');
+  const hora = agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const total = pedidos.reduce((s,p)=>s+p.total,0);
+  const linhas = Object.keys(agg).map(nome=>{
+    const item = agg[nome];
+    const unitario = item.qtd > 1 ? `<span class="ticket-unit">${fmt(item.preco)} cada</span>` : '';
+    return `<div class="ticket-item">
+      <span class="ticket-info">
+        <span class="ticket-nome">${item.qtd}x ${nome}</span>
+        ${unitario}
+      </span>
+      <span class="ticket-valor">${fmt(item.preco*item.qtd)}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ticket').innerHTML = `
+    <div class="ticket-head">
+      <div class="ticket-brand">AL FORNO</div>
+      <div class="ticket-sub">Pizzaria Rústica</div>
+    </div>
+    <div class="ticket-meta">
+      <span>Mesa ${mesa}</span>
+      <span>${data} ${hora}</span>
+    </div>
+    <div class="ticket-sep"></div>
+    <div class="ticket-items">${linhas}</div>
+    <div class="ticket-sep"></div>
+    <div class="ticket-total"><span>TOTAL</span><span>${fmt(total)}</span></div>
+    <div class="ticket-sep"></div>
+    <div class="ticket-foot">
+      <div class="thanks">Obrigado pela preferência!</div>
+      <div>Comprovante de fechamento de conta</div>
+    </div>`;
+}
+
+function fecharConta(mesa){
+  const pedidosMesa = getPedidos().filter(p=>String(p.mesa)===String(mesa));
+  if(pedidosMesa.length===0) return;
+  if(!confirm('Fechar conta da Mesa '+mesa+' e imprimir o comprovante? Os pedidos serão removidos após a impressão.')) return;
+
+  renderTicket(mesa, pedidosMesa);
+  mesaParaFechar = mesa;
+
+  const pageStyle = document.createElement('style');
+  pageStyle.id = 'ticket-page-style';
+  pageStyle.textContent = '@page{size:80mm auto;margin:4mm}';
+  document.head.appendChild(pageStyle);
+
+  document.body.classList.add('printing-ticket');
+  setTimeout(()=>window.print(), 60);
+}
+
+window.addEventListener('afterprint', ()=>{
+  document.body.classList.remove('printing-ticket');
+  const pageStyle = document.getElementById('ticket-page-style');
+  if(pageStyle) pageStyle.remove();
+  document.getElementById('ticket').innerHTML = '';
+
+  if(mesaParaFechar === null) return;
+  const mesa = mesaParaFechar;
+  mesaParaFechar = null;
+  savePedidos(getPedidos().filter(p=>String(p.mesa)!==String(mesa)));
+  renderCaixa();
+});
+
+// Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then((reg)=>{ reg.update(); }).catch(()=>{});
+}
+</script>
+</body>
+</html>
