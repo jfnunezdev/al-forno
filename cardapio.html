@@ -12,6 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
 <style>
 :root{
   --bg-main:#15110e;
@@ -360,7 +362,7 @@ document.getElementById('closeDrawer').addEventListener('click',closeDrawer);
 overlay.addEventListener('click',closeDrawer);
 function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
 
-document.getElementById('checkoutBtn').addEventListener('click',()=>{
+document.getElementById('checkoutBtn').addEventListener('click',async()=>{
   if(cart.length===0){ alert('Adicione itens ao carrinho.'); return; }
   const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
   const pedido = {
@@ -371,6 +373,18 @@ document.getElementById('checkoutBtn').addEventListener('click',()=>{
     horario: new Date().toLocaleString('pt-BR'),
     status: 'Recebido'
   };
+  const { error } = await supabase.from('pedidos').insert([{
+    mesa: pedido.mesa,
+    itens: pedido.itens,
+    total: pedido.total,
+    horario: pedido.horario,
+    status: pedido.status
+  }]);
+  if(error){
+    console.error('Erro ao enviar pedido para o Supabase:', error);
+    alert('Não foi possível enviar o pedido. Tente novamente.');
+    return;
+  }
   const pedidos = JSON.parse(localStorage.getItem('alforno_pedidos') || '[]');
   pedidos.unshift(pedido);
   localStorage.setItem('alforno_pedidos', JSON.stringify(pedidos));

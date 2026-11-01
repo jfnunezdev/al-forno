@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
 <style>
 :root{
   --bg-main:#15110e;
@@ -219,33 +221,9 @@ document.querySelectorAll('.tab').forEach(t=>{
 
 // ===================== QR & LINK CARDAPIO =====================
 const mesaInput = document.getElementById('mesaInput');
-function getCardapioBaseURL(){
-  let base = localStorage.getItem('alforno_baseurl');
-  if(!base){
-    if(location.protocol==='file:'){ base=''; }
-    else { base = location.origin; }
-  }
-  if(base){
-    if(!base.endsWith('/')) base+='/';
-    return base + 'cardapio.html';
-  }
-  return window.location.href.split('?')[0].replace('index.html','') + 'cardapio.html';
-}
-
+const CARDAPIO_URL_BASE = 'https://jfnunezdev.github.io/al-forno/cardapio.html?mesa=';
 function getCardapioUrlForMesa(m){
-  let base = localStorage.getItem('alforno_baseurl');
-  if(!base){
-    if(location.protocol==='file:'){ base=''; }
-    else { base = location.origin; }
-  }
-  let full;
-  if(base){
-    if(!base.endsWith('/')) base+='/';
-    full = base + 'cardapio.html?mesa=' + m;
-  } else {
-    full = window.location.href.split('?')[0].replace('index.html','cardapio.html') + '?mesa=' + m;
-  }
-  return full;
+  return CARDAPIO_URL_BASE + encodeURIComponent(m || 1);
 }
 
 function updateQR(){
@@ -418,6 +396,13 @@ window.addEventListener('afterprint', ()=>{
   savePedidos(getPedidos().filter(p=>String(p.mesa)!==String(mesa)));
   renderCaixa();
 });
+
+supabase.channel('pedidos')
+  .on('postgres_changes', {event:'INSERT', schema:'public', table:'pedidos'}, payload=>{
+    console.log(payload);
+    location.reload();
+  })
+  .subscribe();
 
 // Service Worker
 if('serviceWorker' in navigator){
