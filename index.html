@@ -389,7 +389,8 @@ async function fecharConta(mesa){
     const {count, error} = await window.alfornoSupabase
       .from('pedidos')
       .update({estado:'pago'}, {count:'exact'})
-      .eq('mesa', mesa);
+      .eq('mesa', mesa)
+      .neq('estado', 'pago');
     if(error) throw error;
     if(!count){
       throw new Error('Nenhum pedido pendente foi atualizado para a mesa '+mesa+'.');
