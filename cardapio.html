@@ -374,7 +374,6 @@ checkoutBtn.addEventListener('click',async()=>{
       mesa: mesa,
       itens: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
       total: total,
-      horario: new Date().toLocaleString('pt-BR'),
       status: 'Recebido'
     };
     console.log('Enviando pedido ao Supabase', {mesa: pedido.mesa, itens: pedido.itens.length, total: pedido.total});
