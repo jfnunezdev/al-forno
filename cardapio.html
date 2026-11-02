@@ -266,13 +266,33 @@ const produtos = [
 
 // ===================== ESTADO =====================
 const params = new URLSearchParams(location.search);
-const mesa = params.get('mesa') || '1';
+const mesaParam = Number(params.get('mesa'));
+const mesa = Number.isSafeInteger(mesaParam) && mesaParam > 0 ? String(mesaParam) : '1';
 document.getElementById('mesaBadge').textContent = 'Mesa ' + mesa;
 
-let cart = JSON.parse(localStorage.getItem('alforno_cart_mesa_'+mesa) || '[]');
+const cartStorageKey = 'alforno_cart_mesa_' + mesa;
+let cart = [];
+try{
+  const savedCart = JSON.parse(localStorage.getItem(cartStorageKey) || '[]');
+  if(Array.isArray(savedCart)){
+    cart = savedCart.reduce((items,item)=>{
+      const product = produtos.find(p=>p.id===Number(item.id));
+      const quantity = Number(item.qtd);
+      if(!product || !Number.isSafeInteger(quantity) || quantity <= 0) return items;
+      const existing = items.find(i=>i.id===product.id);
+      if(existing) existing.qtd += quantity;
+      else items.push({id:product.id,nome:product.nome,preco:product.preco,qtd:quantity});
+      return items;
+    },[]);
+  }else{
+    console.error('O carrinho salvo para esta mesa não tem um formato válido.');
+  }
+}catch(error){
+  console.error('Não foi possível carregar o carrinho salvo desta mesa:', error);
+}
 let filtro = 'todas';
 
-function saveCart(){ localStorage.setItem('alforno_cart_mesa_'+mesa, JSON.stringify(cart)); }
+function saveCart(){ localStorage.setItem(cartStorageKey, JSON.stringify(cart)); }
 
 function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
 
@@ -319,16 +339,21 @@ document.querySelectorAll('.cat').forEach(b=>{
 
 // ===================== CARRINHO =====================
 function addItem(id){
-  const p = produtos.find(x=>x.id===id);
-  const ex = cart.find(x=>x.id===id);
-  if(ex) ex.qtd++; else cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1});
+  const p = produtos.find(x=>x.id===Number(id));
+  if(!p){
+    console.error('Produto não encontrado para adicionar ao carrinho:', id);
+    return;
+  }
+  const ex = cart.find(x=>x.id===p.id);
+  if(ex) ex.qtd++;
+  else cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1});
   saveCart(); updateCart();
 }
 function changeQty(id,delta){
-  const it = cart.find(x=>x.id===id);
+  const it = cart.find(x=>x.id===Number(id));
   if(!it) return;
-  it.qtd += delta;
-  if(it.qtd<=0) cart = cart.filter(x=>x.id!==id);
+  it.qtd += Number(delta);
+  if(it.qtd<=0) cart = cart.filter(x=>x.id!==it.id);
   saveCart(); updateCart(); renderCart();
 }
 function updateCart(){

@@ -334,7 +334,6 @@ function showBill(mesa){
   area.innerHTML = html;
 }
 
-let mesaParaFechar = null;
 let fechamentoEmAndamento = false;
 
 function renderTicket(mesa, pedidos){
@@ -379,21 +378,44 @@ function renderTicket(mesa, pedidos){
     </div>`;
 }
 
-function fecharConta(mesa){
+async function fecharConta(mesa){
+  if(fechamentoEmAndamento) return;
   const pedidosMesa = getPedidos().filter(p=>String(p.mesa)===String(mesa));
   if(pedidosMesa.length===0) return;
   if(!confirm('Fechar conta da Mesa '+mesa+' e imprimir o comprovante? Os pedidos serão marcados como pagos.')) return;
 
-  renderTicket(mesa, pedidosMesa);
-  mesaParaFechar = mesa;
+  fechamentoEmAndamento = true;
+  try{
+    const {data, error} = await window.alfornoSupabase
+      .from('pedidos')
+      .update({estado:'pago'})
+      .eq('mesa', mesa)
+      .neq('estado','pago')
+      .select('id');
+    if(error) throw error;
+    if(!data || data.length===0){
+      throw new Error('Nenhum pedido pendente foi atualizado para a mesa '+mesa+'.');
+    }
 
-  const pageStyle = document.createElement('style');
-  pageStyle.id = 'ticket-page-style';
-  pageStyle.textContent = '@page{size:80mm auto;margin:4mm}';
-  document.head.appendChild(pageStyle);
+    pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
+    renderOrders();
+    renderCaixa();
+    await loadPedidos();
 
-  document.body.classList.add('printing-ticket');
-  setTimeout(()=>window.print(), 60);
+    renderTicket(mesa, pedidosMesa);
+    const pageStyle = document.createElement('style');
+    pageStyle.id = 'ticket-page-style';
+    pageStyle.textContent = '@page{size:80mm auto;margin:4mm}';
+    document.head.appendChild(pageStyle);
+    document.body.classList.add('printing-ticket');
+    setTimeout(()=>window.print(), 60);
+  }catch(error){
+    console.error('Erro ao marcar pedidos como pagos no Supabase:', error);
+    alert('Não foi possível fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
+    await loadPedidos();
+  }finally{
+    fechamentoEmAndamento = false;
+  }
 }
 
 window.addEventListener('afterprint', ()=>{
@@ -401,36 +423,6 @@ window.addEventListener('afterprint', ()=>{
   const pageStyle = document.getElementById('ticket-page-style');
   if(pageStyle) pageStyle.remove();
   document.getElementById('ticket').innerHTML = '';
-
-  if(mesaParaFechar === null || fechamentoEmAndamento) return;
-  const mesa = mesaParaFechar;
-  mesaParaFechar = null;
-  fechamentoEmAndamento = true;
-  (async()=>{
-    try{
-      const {data, error} = await window.alfornoSupabase
-        .from('pedidos')
-        .update({estado:'pago'})
-        .eq('mesa', mesa)
-        .neq('estado','pago')
-        .select('id');
-      if(error) throw error;
-      if(!data || data.length===0){
-        throw new Error('Nenhum pedido pendente foi atualizado para a mesa '+mesa+'.');
-      }
-
-      pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
-      renderOrders();
-      renderCaixa();
-      await loadPedidos();
-    }catch(error){
-      console.error('Erro ao marcar pedidos como pagos no Supabase:', error);
-      alert('Não foi possível fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
-      await loadPedidos();
-    }finally{
-      fechamentoEmAndamento = false;
-    }
-  })();
 });
 
 window.alfornoSupabase.channel('pedidos')
