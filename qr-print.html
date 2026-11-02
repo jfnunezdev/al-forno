@@ -88,7 +88,7 @@ function detectLocalIP(cb){
 function getBase(){
   let b = localStorage.getItem('alforno_baseurl');
   if(!b){
-    if(location.protocol==='file:'){ b=''; } else { b = location.origin; }
+    b = 'https://jfnunezdev.github.io/al-forno1';
   }
   return b;
 }

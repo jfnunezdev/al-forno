@@ -222,9 +222,7 @@ document.querySelectorAll('.tab').forEach(t=>{
 // ===================== QR & LINK CARDAPIO =====================
 const mesaInput = document.getElementById('mesaInput');
 function getCardapioUrlForMesa(m){
-  const url = new URL('cardapio.html', location.href);
-  url.searchParams.set('mesa', m || 1);
-  return url.href;
+  return `https://jfnunezdev.github.io/al-forno1/cardapio.html?mesa=${m || 1}`;
 }
 
 function updateQR(){
@@ -408,13 +406,15 @@ async function fecharConta(mesa){
 
   fechamentoEmAndamento = true;
   try{
-    const {count, error} = await window.alfornoSupabase
+    const { data, count, error } = await window.alfornoSupabase
       .from('pedidos')
-      .update({estado:'pago'}, {count:'exact'})
-      .eq('mesa', mesa)
-      .or('estado.neq.pago,estado.is.null');
+      .update({ estado: 'pago' })
+      .eq('mesa', String(mesa))
+      .or('estado.neq.pago,estado.is.null')
+      .select('id', { count: 'exact' });
+
     if(error) throw error;
-    if(!Number.isInteger(count) || count <= 0){
+    if(typeof count !== 'number' || count <= 0){
       throw new Error('Supabase não confirmou pedidos pendentes para a Mesa '+mesa+'.');
     }
 
@@ -452,11 +452,15 @@ window.addEventListener('afterprint', ()=>{
   document.getElementById('ticket').innerHTML = '';
 });
 
-window.alfornoSupabase.channel('pedidos')
-  .on('postgres_changes', {event:'*', schema:'public', table:'pedidos'}, ()=>{
+window.alfornoSupabase.channel('pedidos-realtime-channel')
+  .on('postgres_changes', {event:'*', schema:'public', table:'pedidos'}, (payload)=>{
+    console.log('Real-time order change received:', payload);
     loadPedidos();
   })
   .subscribe((status,error)=>{
+    if(status === 'SUBSCRIBED'){
+      console.log('Connected to Supabase Realtime channel for pedidos');
+    }
     if(status==='CHANNEL_ERROR' || status==='TIMED_OUT'){
       console.error('Falha na conexão realtime do Supabase:', status, error);
     }
