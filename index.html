@@ -221,9 +221,10 @@ document.querySelectorAll('.tab').forEach(t=>{
 
 // ===================== QR & LINK CARDAPIO =====================
 const mesaInput = document.getElementById('mesaInput');
-const CARDAPIO_URL_BASE = 'https://jfnunezdev.github.io/al-forno1/cardapio.html?mesa=';
 function getCardapioUrlForMesa(m){
-  return CARDAPIO_URL_BASE + encodeURIComponent(m || 1);
+  const url = new URL('cardapio.html', location.href);
+  url.searchParams.set('mesa', m || 1);
+  return url.href;
 }
 
 function updateQR(){
@@ -258,6 +259,8 @@ updateQR();
 // ===================== PEDIDOS =====================
 const statusList = ['Recebido','Em forno','Pronto','Entregue'];
 let pedidos = [];
+let pedidosLoadPromise = null;
+let recarregarPedidos = false;
 function getPedidos(){ return pedidos; }
 function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
 
@@ -281,20 +284,34 @@ function renderOrders(){
     </div>`).join('');
 }
 
-async function loadPedidos(){
-  try{
-    const { data, error } = await window.alfornoSupabase
-      .from('pedidos')
-      .select('*')
-      .or('estado.neq.pago,estado.is.null');
-    if(error) throw error;
-    pedidos = (data || []).filter(p=>p.estado !== 'pago');
-    renderOrders();
-    renderCaixa();
-  }catch(error){
-    console.error('Erro ao carregar pedidos do Supabase:', error);
-    document.getElementById('ordersGrid').innerHTML='<div class="empty">Não foi possível carregar os pedidos.</div>';
+function loadPedidos(){
+  if(pedidosLoadPromise){
+    recarregarPedidos = true;
+    return pedidosLoadPromise;
   }
+  pedidosLoadPromise = Promise.resolve().then(async()=>{
+    try{
+      do{
+        recarregarPedidos = false;
+        try{
+          const { data, error } = await window.alfornoSupabase
+            .from('pedidos')
+            .select('*')
+            .or('estado.neq.pago,estado.is.null');
+          if(error) throw error;
+          pedidos = (data || []).filter(p=>p.estado !== 'pago');
+          renderOrders();
+          renderCaixa();
+        }catch(error){
+          console.error('Erro ao carregar pedidos do Supabase:', error);
+          document.getElementById('ordersGrid').innerHTML='<div class="empty">Não foi possível carregar os pedidos.</div>';
+        }
+      }while(recarregarPedidos);
+    }finally{
+      pedidosLoadPromise = null;
+    }
+  });
+  return pedidosLoadPromise;
 }
 
 async function setStatus(id,status){
@@ -305,6 +322,8 @@ async function setStatus(id,status){
 document.getElementById('refreshBtn').addEventListener('click', loadPedidos);
 
 loadPedidos();
+setInterval(()=>{ if(!document.hidden) loadPedidos(); }, 5000);
+window.addEventListener('focus', loadPedidos);
 
 // ===================== CAIXA =====================
 function renderCaixa(){
