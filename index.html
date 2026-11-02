@@ -401,6 +401,7 @@ async function fecharConta(mesa){
     renderOrders();
     renderCaixa();
     await loadPedidos();
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 
     renderTicket(mesa, pedidosMesa);
     const pageStyle = document.createElement('style');
