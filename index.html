@@ -270,14 +270,13 @@ function renderOrders(){
       <div class="order-head">
         <span class="order-id">${p.id}</span>
         <span class="order-mesa">Mesa ${p.mesa}</span>
-        <span class="order-time">${p.horario}</span>
       </div>
       <div class="order-items">
-        ${p.itens.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>R$ ${(i.preco*i.qtd).toFixed(2).replace('.',',')}</span></div>`).join('')}
+        ${p.items.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>R$ ${(i.preco*i.qtd).toFixed(2).replace('.',',')}</span></div>`).join('')}
       </div>
       <div class="order-total"><span>Total</span><span>R$ ${p.total.toFixed(2).replace('.',',')}</span></div>
       <div class="status-row">
-        ${statusList.map(s=>`<button class="status-btn ${p.status===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
+        ${statusList.map(s=>`<button class="status-btn ${p.estado===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
       </div>
     </div>`).join('');
 }
@@ -296,7 +295,7 @@ async function loadPedidos(){
 }
 
 async function setStatus(id,status){
-  const { error } = await window.alfornoSupabase.from('pedidos').update({status}).eq('id',id);
+  const { error } = await window.alfornoSupabase.from('pedidos').update({estado:status}).eq('id',id);
   if(error){ console.error('Erro ao atualizar pedido no Supabase:', error); return; }
   await loadPedidos();
 }
@@ -319,7 +318,7 @@ function showBill(mesa){
   const area = document.getElementById('billArea');
   if(pedidos.length===0){ area.innerHTML=''; return; }
   const agg = {};
-  pedidos.forEach(p=>p.itens.forEach(i=>{
+  pedidos.forEach(p=>p.items.forEach(i=>{
     if(!agg[i.nome]) agg[i.nome]={qtd:0,preco:i.preco};
     agg[i.nome].qtd += i.qtd;
   }));
@@ -339,7 +338,7 @@ let mesaParaFechar = null;
 
 function renderTicket(mesa, pedidos){
   const agg = {};
-  pedidos.forEach(p=>p.itens.forEach(i=>{
+  pedidos.forEach(p=>p.items.forEach(i=>{
     if(!agg[i.nome]) agg[i.nome]={qtd:0,preco:i.preco};
     agg[i.nome].qtd += i.qtd;
   }));

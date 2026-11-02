@@ -372,11 +372,11 @@ checkoutBtn.addEventListener('click',async()=>{
     const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
     const pedido = {
       mesa: mesa,
-      itens: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
+      items: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
       total: total,
-      status: 'Recebido'
+      estado: 'Recebido'
     };
-    console.log('Enviando pedido ao Supabase', {mesa: pedido.mesa, itens: pedido.itens.length, total: pedido.total});
+    console.log('Enviando pedido ao Supabase', {mesa: pedido.mesa, items: pedido.items.length, total: pedido.total});
     const { error } = await window.alfornoSupabase.from('pedidos').insert([pedido]);
     if(error) throw error;
 
