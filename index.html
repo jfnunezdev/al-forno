@@ -386,14 +386,12 @@ async function fecharConta(mesa){
 
   fechamentoEmAndamento = true;
   try{
-    const {data, error} = await window.alfornoSupabase
+    const {count, error} = await window.alfornoSupabase
       .from('pedidos')
-      .update({estado:'pago'})
-      .eq('mesa', mesa)
-      .neq('estado','pago')
-      .select('id');
+      .update({estado:'pago'}, {count:'exact'})
+      .eq('mesa', mesa);
     if(error) throw error;
-    if(!data || data.length===0){
+    if(!count){
       throw new Error('Nenhum pedido pendente foi atualizado para a mesa '+mesa+'.');
     }
 
