@@ -362,36 +362,36 @@ document.getElementById('closeDrawer').addEventListener('click',closeDrawer);
 overlay.addEventListener('click',closeDrawer);
 function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
 
-document.getElementById('checkoutBtn').addEventListener('click',async()=>{
+const checkoutBtn = document.getElementById('checkoutBtn');
+checkoutBtn.addEventListener('click',async()=>{
+  console.log('Clique em Enviar Pedido', {mesa, itensNoCarrinho: cart.length});
   if(cart.length===0){ alert('Adicione itens ao carrinho.'); return; }
-  const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
-  const pedido = {
-    id: 'PED-'+Date.now(),
-    mesa: mesa,
-    itens: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
-    total: total,
-    horario: new Date().toLocaleString('pt-BR'),
-    status: 'Recebido'
-  };
-  const { error } = await supabase.from('pedidos').insert([{
-    mesa: pedido.mesa,
-    itens: pedido.itens,
-    total: pedido.total,
-    horario: pedido.horario,
-    status: pedido.status
-  }]);
-  if(error){
+
+  checkoutBtn.disabled = true;
+  try{
+    const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
+    const pedido = {
+      mesa: mesa,
+      itens: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
+      total: total,
+      horario: new Date().toLocaleString('pt-BR'),
+      status: 'Recebido'
+    };
+    console.log('Enviando pedido ao Supabase', {mesa: pedido.mesa, itens: pedido.itens.length, total: pedido.total});
+    const { error } = await window.alfornoSupabase.from('pedidos').insert([pedido]);
+    if(error) throw error;
+
+    console.log('Pedido enviado ao Supabase');
+    cart = [];
+    saveCart(); updateCart();
+    closeDrawer();
+    document.getElementById('success').classList.add('show');
+  }catch(error){
     console.error('Erro ao enviar pedido para o Supabase:', error);
-    alert('Não foi possível enviar o pedido. Tente novamente.');
-    return;
+    alert('Não foi possível enviar o pedido. Verifique a conexão e tente novamente.');
+  }finally{
+    checkoutBtn.disabled = false;
   }
-  const pedidos = JSON.parse(localStorage.getItem('alforno_pedidos') || '[]');
-  pedidos.unshift(pedido);
-  localStorage.setItem('alforno_pedidos', JSON.stringify(pedidos));
-  cart = [];
-  saveCart(); updateCart();
-  closeDrawer();
-  document.getElementById('success').classList.add('show');
 });
 document.getElementById('newOrder').addEventListener('click',()=>{
   document.getElementById('success').classList.remove('show');

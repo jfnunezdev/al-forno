@@ -257,8 +257,8 @@ updateQR();
 
 // ===================== PEDIDOS =====================
 const statusList = ['Recebido','Em forno','Pronto','Entregue'];
-function getPedidos(){ return JSON.parse(localStorage.getItem('alforno_pedidos') || '[]'); }
-function savePedidos(p){ localStorage.setItem('alforno_pedidos', JSON.stringify(p)); }
+let pedidos = [];
+function getPedidos(){ return pedidos; }
 function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
 
 function renderOrders(){
@@ -282,15 +282,27 @@ function renderOrders(){
     </div>`).join('');
 }
 
-function setStatus(id,status){
-  const pedidos = getPedidos();
-  const p = pedidos.find(x=>x.id===id);
-  if(p){ p.status=status; savePedidos(pedidos); renderOrders(); }
+async function loadPedidos(){
+  try{
+    const { data, error } = await window.alfornoSupabase.from('pedidos').select('*');
+    if(error) throw error;
+    pedidos = data || [];
+    renderOrders();
+    renderCaixa();
+  }catch(error){
+    console.error('Erro ao carregar pedidos do Supabase:', error);
+    document.getElementById('ordersGrid').innerHTML='<div class="empty">Não foi possível carregar os pedidos.</div>';
+  }
 }
-document.getElementById('refreshBtn').addEventListener('click', renderOrders);
 
-// auto refresh
-setInterval(()=>{ if(document.getElementById('tab-pedidos').classList.contains('active')) renderOrders(); }, 3000);
+async function setStatus(id,status){
+  const { error } = await window.alfornoSupabase.from('pedidos').update({status}).eq('id',id);
+  if(error){ console.error('Erro ao atualizar pedido no Supabase:', error); return; }
+  await loadPedidos();
+}
+document.getElementById('refreshBtn').addEventListener('click', loadPedidos);
+
+loadPedidos();
 
 // ===================== CAIXA =====================
 function renderCaixa(){
@@ -393,16 +405,21 @@ window.addEventListener('afterprint', ()=>{
   if(mesaParaFechar === null) return;
   const mesa = mesaParaFechar;
   mesaParaFechar = null;
-  savePedidos(getPedidos().filter(p=>String(p.mesa)!==String(mesa)));
-  renderCaixa();
+  window.alfornoSupabase.from('pedidos').delete().eq('mesa', mesa).then(({error})=>{
+    if(error){ console.error('Erro ao remover pedidos fechados do Supabase:', error); return; }
+    loadPedidos();
+  }).catch(error=>console.error('Erro ao remover pedidos fechados do Supabase:', error));
 });
 
-supabase.channel('pedidos')
-  .on('postgres_changes', {event:'INSERT', schema:'public', table:'pedidos'}, payload=>{
-    console.log(payload);
-    location.reload();
+window.alfornoSupabase.channel('pedidos')
+  .on('postgres_changes', {event:'*', schema:'public', table:'pedidos'}, ()=>{
+    loadPedidos();
   })
-  .subscribe();
+  .subscribe((status,error)=>{
+    if(status==='CHANNEL_ERROR' || status==='TIMED_OUT'){
+      console.error('Falha na conexão realtime do Supabase:', status, error);
+    }
+  });
 
 // Service Worker
 if('serviceWorker' in navigator){
