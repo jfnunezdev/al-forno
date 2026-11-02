@@ -387,8 +387,8 @@ checkoutBtn.addEventListener('click',async()=>{
     closeDrawer();
     document.getElementById('success').classList.add('show');
   }catch(error){
-    console.error('Erro ao enviar pedido para o Supabase:', error);
-    alert('Não foi possível enviar o pedido. Verifique a conexão e tente novamente.');
+    console.error("Erro detalhado:", error);
+    alert("Erro Supabase: " + (error.message || JSON.stringify(error)));
   }finally{
     checkoutBtn.disabled = false;
   }
