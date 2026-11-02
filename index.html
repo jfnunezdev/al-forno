@@ -441,14 +441,13 @@ async function fecharConta(mesa){
 
     if(updateError){
       console.error('Erro detalhado retornado pelo Supabase ao fechar conta:', updateError);
+    }else if(updateRes){
+      pedidos = pedidos.filter(p => String(p.mesa) !== String(mesa));
+      renderOrders();
+      renderCaixa();
     }
 
     console.log('Resultado final do update Supabase:', updateRes);
-
-    // Limpeza visual e impressão garantidas (sem bloqueios falsos para o caixa)
-    pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
-    renderOrders();
-    renderCaixa();
 
     // Sincronização em background com Supabase
     loadPedidos().catch(err => console.error('Erro ao recarregar pedidos:', err));
