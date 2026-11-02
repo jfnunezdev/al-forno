@@ -1,6 +1,7 @@
 ﻿// Configuración del cliente Supabase para AL FORNO
-const SUPABASE_URL = 'https://hihmjfwmroemhpwdxpbn.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpaG1qZndtcm9lbWhwd2R4cGJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NTY4MzcsImV4cCI6MjEwOTEzMjgzN30.TmUI5o3lrTZNruaSd32aHZFd9Zb25UynmKVDDPaSckk';
+// Reemplaza los siguientes valores con la URL y la Anon Key de tu nuevo proyecto en Supabase
+const SUPABASE_URL = 'https://wvqxzxgunrlptrlngsiz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_jbIAZgrcKJniZLhT-_YlEg_7xVoF9iM';
 
 // Aseguramos que la instancia global se cree de forma segura verificando la librería del CDN
 if (!window.alfornoSupabase) {

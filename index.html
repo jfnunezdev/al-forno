@@ -102,7 +102,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bill{font-size:14px;line-height:1.8}
 .bill .row{display:flex;justify-content:space-between}
 .bill .total{font-weight:700;color:var(--accent-color);font-size:18px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color)}
-.bill button{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--accent-color);color:var(--accent-contrast);font-weight:700;font-size:13px;transition:.2s}
+.bill button{margin-top:12px;padding:12px 16px;border-radius:8px;background:var(--accent-color);color:var(--accent-contrast);font-weight:700;font-size:13px;transition:.2s}
 .bill button:hover{background:var(--accent-hover)}
 
 @media(max-width:480px){
@@ -173,7 +173,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       <button id="mesaPlus">+</button>
     </div>
     <div class="qr-preview">
-      <img id="qrImg" src="" alt="QR Code">
+      <img id="qrImg" alt="QR Code">
     </div>
     <div class="qr-link" id="qrLink"></div>
     <div class="qr-actions">
@@ -197,7 +197,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <section class="section" id="tab-caixa">
   <div class="fechamento">
     <h3>Fechamento de Conta por Mesa</h3>
-    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Selecione a mesa para somar todos os pedidos.</p>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Selecione a mesa para somar todos os pedidos acumulados.</p>
     <div class="mesa-select" id="mesaChips"></div>
     <div class="bill" id="billArea"></div>
   </div>
@@ -222,7 +222,8 @@ document.querySelectorAll('.tab').forEach(t=>{
 // ===================== QR & LINK CARDAPIO =====================
 const mesaInput = document.getElementById('mesaInput');
 function getCardapioUrlForMesa(m){
-  return `https://jfnunezdev.github.io/al-forno1/cardapio.html?mesa=${m || 1}`;
+  const base = window.location.href.split('?')[0].replace('index.html','');
+  return base + 'cardapio.html?mesa=' + (m || 1);
 }
 
 function updateQR(){
@@ -255,27 +256,28 @@ function downloadQR(){
 updateQR();
 
 // ===================== PEDIDOS =====================
-const statusList = ['Recebido','Em forno','Pronto','Entregue'];
+const statusList = ['abierta','Recebido','Em forno','Pronto','Entregue'];
 let pedidos = [];
 let pedidosLoadPromise = null;
 let recarregarPedidos = false;
 function getPedidos(){ return pedidos; }
-function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
+function fmt(v){ return 'R$ ' + (Number(v)||0).toFixed(2).replace('.',','); }
 
 function renderOrders(){
-  const pedidos = getPedidos();
+  const list = getPedidos();
   const grid = document.getElementById('ordersGrid');
-  if(pedidos.length===0){ grid.innerHTML='<div class="empty">Nenhum pedido recebido ainda.</div>'; return; }
-  grid.innerHTML = pedidos.map(p=>`
+  if(list.length===0){ grid.innerHTML='<div class="empty">Nenhum pedido ativo no momento.</div>'; return; }
+  
+  grid.innerHTML = list.map(p=>`
     <div class="order-card">
       <div class="order-head">
-        <span class="order-id">${p.id}</span>
+        <span class="order-id">ID: ${p.id}</span>
         <span class="order-mesa">Mesa ${p.mesa}</span>
       </div>
       <div class="order-items">
-        ${p.items.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>R$ ${(i.preco*i.qtd).toFixed(2).replace('.',',')}</span></div>`).join('')}
+        ${(p.items || []).map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>${fmt(Number(i.preco||0)*Number(i.qtd||1))}</span></div>`).join('')}
       </div>
-      <div class="order-total"><span>Total</span><span>R$ ${p.total.toFixed(2).replace('.',',')}</span></div>
+      <div class="order-total"><span>Total</span><span>${fmt(p.total)}</span></div>
       <div class="status-row">
         ${statusList.map(s=>`<button class="status-btn ${p.estado===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
       </div>
@@ -294,10 +296,11 @@ function loadPedidos(){
         try{
           const { data, error } = await window.alfornoSupabase
             .from('pedidos')
-            .select('*')
-            .or('estado.neq.pago,estado.is.null');
+            .select('*');
           if(error) throw error;
-          pedidos = (data || []).filter(p=>p.estado !== 'pago');
+          
+          // Filtrar órdenes activas (excluir 'pago' y 'cerrada')
+          pedidos = (data || []).filter(p => p.estado !== 'pago' && p.estado !== 'cerrada');
           renderOrders();
           renderCaixa();
         }catch(error){
@@ -323,49 +326,57 @@ loadPedidos();
 setInterval(()=>{ if(!document.hidden) loadPedidos(); }, 5000);
 window.addEventListener('focus', loadPedidos);
 
-// ===================== CAIXA =====================
+// ===================== CAIXA E FECHAMENTO =====================
 function renderCaixa(){
-  const pedidos = getPedidos();
-  const mesas = [...new Set(pedidos.map(p=>p.mesa))].sort((a,b)=>a-b);
+  const list = getPedidos();
+  const mesas = [...new Set(list.map(p=>String(p.mesa)))].sort((a,b)=>Number(a)-Number(b));
   const chips = document.getElementById('mesaChips');
-  if(mesas.length===0){ chips.innerHTML='<span style="color:var(--text-muted)">Sem pedidos.</span>'; document.getElementById('billArea').innerHTML=''; return; }
+  if(mesas.length===0){ chips.innerHTML='<span style="color:var(--text-muted)">Sem pedidos ativos.</span>'; document.getElementById('billArea').innerHTML=''; return; }
+  
   chips.innerHTML = mesas.map(m=>`<button class="mesa-chip" data-mesa="${m}" onclick="showBill('${m}')">Mesa ${m}</button>`).join('');
   showBill(mesas[0]);
 }
+
 function showBill(mesa){
   document.querySelectorAll('.mesa-chip').forEach(c=>c.classList.toggle('active', c.dataset.mesa===String(mesa)));
-  const pedidos = getPedidos().filter(p=>String(p.mesa)===String(mesa));
+  const pedidosMesa = getPedidos().filter(p=>String(p.mesa)===String(mesa));
   const area = document.getElementById('billArea');
-  if(pedidos.length===0){ area.innerHTML=''; return; }
+  if(pedidosMesa.length===0){ area.innerHTML=''; return; }
+
+  // Consolidar todos los ítems de los pedidos de esa mesa
   const agg = {};
-  pedidos.forEach(p=>p.items.forEach(i=>{
-    if(!agg[i.nome]) agg[i.nome]={qtd:0,preco:i.preco};
-    agg[i.nome].qtd += i.qtd;
+  pedidosMesa.forEach(p=>(p.items || []).forEach(i=>{
+    const nome = i.nome;
+    if(!agg[nome]) agg[nome]={qtd:0,preco:Number(i.preco)||0};
+    agg[nome].qtd += Number(i.qtd)||0;
   }));
+
   let html = '<div class="bill">';
   Object.keys(agg).forEach(n=>{
     const a = agg[n];
     html += `<div class="row"><span>${a.qtd}x ${n}</span><span>${fmt(a.preco*a.qtd)}</span></div>`;
   });
-  const total = pedidos.reduce((s,p)=>s+p.total,0);
-  html += `<div class="total"><span>Total da Mesa ${mesa}</span><span>${fmt(total)}</span></div>`;
-  html += `<button onclick="fecharConta('${mesa}')">Fechar Conta e Imprimir</button>`;
+  const totalMesa = pedidosMesa.reduce((s,p)=>s+Number(p.total||0),0);
+  html += `<div class="total"><span>Total da Mesa ${mesa}</span><span>${fmt(totalMesa)}</span></div>`;
+  html += `<button onclick="fecharConta('${mesa}')">Imprimir e Cerrar Conta</button>`;
   html += '</div>';
   area.innerHTML = html;
 }
 
 let fechamentoEmAndamento = false;
 
-function renderTicket(mesa, pedidos){
+function renderTicket(mesa, pedidosMesa){
   const agg = {};
-  pedidos.forEach(p=>p.items.forEach(i=>{
-    if(!agg[i.nome]) agg[i.nome]={qtd:0,preco:i.preco};
-    agg[i.nome].qtd += i.qtd;
+  pedidosMesa.forEach(p=>(p.items || []).forEach(i=>{
+    const nome = i.nome;
+    if(!agg[nome]) agg[nome]={qtd:0,preco:Number(i.preco)||0};
+    agg[nome].qtd += Number(i.qtd)||0;
   }));
   const agora = new Date();
   const data = agora.toLocaleDateString('pt-BR');
   const hora = agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  const total = pedidos.reduce((s,p)=>s+p.total,0);
+  const total = pedidosMesa.reduce((s,p)=>s+Number(p.total||0),0);
+
   const linhas = Object.keys(agg).map(nome=>{
     const item = agg[nome];
     const unitario = item.qtd > 1 ? `<span class="ticket-unit">${fmt(item.preco)} cada</span>` : '';
@@ -405,32 +416,36 @@ async function fecharConta(mesa){
     alert('Nenhum pedido pendente encontrado para a Mesa ' + mesa + '.');
     return;
   }
-  if(!confirm('Fechar conta da Mesa '+mesa+' e imprimir o comprovante? Os pedidos serão marcados como pagos.')) return;
+  if(!confirm('Deseja fechar a conta da Mesa '+mesa+'? Isso imprimirá o ticket e liberará a mesa imediatamente.')) return;
 
   fechamentoEmAndamento = true;
   try{
-    pedidos = pedidos.filter(p => String(p.mesa) !== String(mesa));
-    renderOrders();
-    renderCaixa();
-
-    const { error } = await window.alfornoSupabase
-      .from('pedidos')
-      .update({ estado: 'pago' })
-      .eq('mesa', mesa);
-    if(error) throw error;
-
+    // Renderizar ticket y preparar impresión
     renderTicket(mesa, pedidosMesa);
     const pageStyle = document.createElement('style');
     pageStyle.id = 'ticket-page-style';
     pageStyle.textContent = '@page{size:80mm auto;margin:4mm}';
     document.head.appendChild(pageStyle);
     document.body.classList.add('printing-ticket');
+
     try{
       window.print();
     }catch(printError){
-      console.error('A conta foi fechada, mas a impressão falhou:', printError);
-      alert('A conta foi fechada, mas não foi possível abrir a impressão.');
+      console.error('Falha na impressão:', printError);
     }
+
+    // Actualizar estado en Supabase a 'cerrada' (o 'pago') para que desaparezca de inmediato
+    const { error } = await window.alfornoSupabase
+      .from('pedidos')
+      .update({ estado: 'cerrada' })
+      .eq('mesa', mesa);
+
+    if(error) throw error;
+
+    // Actualizar estado local y UI instantáneamente
+    pedidos = pedidos.filter(p => String(p.mesa) !== String(mesa));
+    renderOrders();
+    renderCaixa();
   }catch(error){
     console.error('Erro crítico ao fechar a conta da Mesa '+mesa+':', error);
     alert('Erro ao fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
@@ -446,6 +461,7 @@ window.addEventListener('afterprint', ()=>{
   document.getElementById('ticket').innerHTML = '';
 });
 
+// Real-time subscription
 window.alfornoSupabase.channel('pedidos-realtime-channel')
   .on('postgres_changes', {event:'*', schema:'public', table:'pedidos'}, (payload)=>{
     console.log('Real-time order change received:', payload);

@@ -1,14 +1,16 @@
 ﻿// Service Worker - AL FORNO PWA
-const CACHE_NAME = 'alforno-cache-v14';
+const CACHE_NAME = 'alforno-cache-v15';
 const ASSETS = [
   './',
   './index.html',
   './cardapio.html',
   './qr-print.html',
+  './supabase.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
+  './wood.svg',
   './img/prod-1.jpg',
   './img/prod-2.jpg',
   './img/prod-3.jpg',

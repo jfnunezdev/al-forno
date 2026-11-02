@@ -209,7 +209,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 <main id="content"></main>
 
-<button class="cart-fab" id="cartFab" type="button" aria-label="Abrir carrito">
+<button class="cart-fab" id="cartFab" type="button" aria-label="Abrir carrinho">
   <span>Carrinho</span>
   <span class="cart-count" id="cartCount">0</span>
 </button>
@@ -220,7 +220,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <h3>Seu Pedido</h3>
   <div id="cartItems"></div>
   <div class="cart-total"><span>Total</span><span id="cartTotal">R$ 0,00</span></div>
-  <button class="checkout-btn" id="checkoutBtn">Enviar Pedido </button>
+  <button class="checkout-btn" id="checkoutBtn">Enviar Pedido</button>
 </div>
 
 <div class="success" id="success">
@@ -264,10 +264,20 @@ const produtos = [
   {id:25,cat:'bebidas',nome:'Suco de Laranja Natural',desc:'Suco natural de laranja espremido na hora.',preco:12.00,img:'img/prod-25.jpg'},
 ];
 
-// ===================== ESTADO =====================
+// ===================== ESTADO E IDENTIFICAÇÃO POR MESA =====================
 const params = new URLSearchParams(location.search);
-const mesaParam = Number(params.get('mesa'));
-const mesa = Number.isSafeInteger(mesaParam) && mesaParam > 0 ? String(mesaParam) : '1';
+const mesaParam = params.get('mesa');
+let mesa = '1';
+
+if (mesaParam && !isNaN(mesaParam) && Number(mesaParam) > 0) {
+  mesa = String(Number(mesaParam));
+  localStorage.setItem('alforno_mesa', mesa);
+} else {
+  const savedMesa = localStorage.getItem('alforno_mesa');
+  if (savedMesa) {
+    mesa = savedMesa;
+  }
+}
 document.getElementById('mesaBadge').textContent = 'Mesa ' + mesa;
 
 const cartStorageKey = 'alforno_cart_mesa_' + mesa;
@@ -284,8 +294,6 @@ try{
       else items.push({id:product.id,nome:product.nome,preco:product.preco,qtd:quantity});
       return items;
     },[]);
-  }else{
-    console.error('O carrinho salvo para esta mesa não tem um formato válido.');
   }
 }catch(error){
   console.error('Não foi possível carregar o carrinho salvo desta mesa:', error);
@@ -293,10 +301,9 @@ try{
 let filtro = 'todas';
 
 function saveCart(){ localStorage.setItem(cartStorageKey, JSON.stringify(cart)); }
-
 function fmt(v){ return 'R$ ' + v.toFixed(2).replace('.',','); }
 
-// ===================== RENDER =====================
+// ===================== RENDER CARDÁPIO =====================
 const content = document.getElementById('content');
 function render(){
   const cats = filtro==='todas' ? produtos : produtos.filter(p=>p.cat===filtro);
@@ -305,7 +312,7 @@ function render(){
   const catNames = {pizzas:'Pizzas Artesanais',cervejas:'Cervejas',bebidas:'Refrigerantes e Bebidas'};
   let html='';
   Object.keys(groups).forEach(c=>{
-    html += `<section class="section"><h3 class="section-title">${catNames[c]}</h3><div class="grid">`;
+    html += `<section class="section"><h3 class="section-title">${catNames[c] || c}</h3><div class="grid">`;
     groups[c].forEach(p=>{
       html += `
         <article class="card">
@@ -349,6 +356,7 @@ function addItem(id){
   else cart.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1});
   saveCart(); updateCart();
 }
+
 function changeQty(id,delta){
   const it = cart.find(x=>x.id===Number(id));
   if(!it) return;
@@ -356,10 +364,12 @@ function changeQty(id,delta){
   if(it.qtd<=0) cart = cart.filter(x=>x.id!==it.id);
   saveCart(); updateCart(); renderCart();
 }
+
 function updateCart(){
   const count = cart.reduce((s,i)=>s+i.qtd,0);
   document.getElementById('cartCount').textContent = count;
 }
+
 function renderCart(){
   const el = document.getElementById('cartItems');
   if(cart.length===0){ el.innerHTML='<p style="color:var(--text-muted);padding:20px 0">Carrinho vazio.</p>'; }
@@ -387,42 +397,89 @@ document.getElementById('closeDrawer').addEventListener('click',closeDrawer);
 overlay.addEventListener('click',closeDrawer);
 function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
 
+// ===================== FLUXO DE PEDIDOS ACUMULADOS EM SUPABASE =====================
 const checkoutBtn = document.getElementById('checkoutBtn');
-checkoutBtn.addEventListener('click',async()=>{
-  console.log('Clique em Enviar Pedido', {mesa, itensNoCarrinho: cart.length});
+checkoutBtn.addEventListener('click', async () => {
   if(cart.length===0){ alert('Adicione itens ao carrinho.'); return; }
 
   checkoutBtn.disabled = true;
-  try{
-    const total = cart.reduce((s,i)=>s+i.preco*i.qtd,0);
-    const pedido = {
-      mesa: mesa,
-      items: cart.map(i=>({nome:i.nome,qtd:i.qtd,preco:i.preco})),
-      total: total,
-      estado: 'Recebido'
-    };
-    console.log('Enviando pedido ao Supabase', {mesa: pedido.mesa, items: pedido.items.length, total: pedido.total});
-    const { error } = await window.alfornoSupabase.from('pedidos').insert([pedido]);
-    if(error) throw error;
+  try {
+    // 1. Consultar en Supabase si ya existe una orden activa para esta mesa
+    const { data: existingOrders, error: fetchError } = await window.alfornoSupabase
+      .from('pedidos')
+      .select('*')
+      .eq('mesa', mesa);
+    
+    if(fetchError) throw fetchError;
 
-    console.log('Pedido enviado ao Supabase');
+    // Buscar orden activa (estado diferente de 'pago' y 'cerrada')
+    const activeOrder = (existingOrders || []).find(p => p.estado !== 'pago' && p.estado !== 'cerrada');
+
+    const newCartItems = cart.map(i => ({ nome: i.nome, qtd: i.qtd, preco: i.preco }));
+
+    if (activeOrder) {
+      // 2B. SÍ existe orden activa: acumular ítems y recalcular total
+      const mergedItems = [...(activeOrder.items || [])];
+      
+      newCartItems.forEach(newItem => {
+        const existingItem = mergedItems.find(mi => mi.nome === newItem.nome);
+        if (existingItem) {
+          existingItem.qtd += newItem.qtd;
+          if (newItem.preco) existingItem.preco = newItem.preco; // Mantener precio actualizado
+        } else {
+          mergedItems.push({ nome: newItem.nome, qtd: newItem.qtd, preco: newItem.preco });
+        }
+      });
+
+      const newTotal = mergedItems.reduce((sum, item) => sum + (Number(item.preco) * Number(item.qtd)), 0);
+
+      const { error: updateError } = await window.alfornoSupabase
+        .from('pedidos')
+        .update({
+          items: mergedItems,
+          total: newTotal
+        })
+        .eq('id', activeOrder.id);
+
+      if (updateError) throw updateError;
+    } else {
+      // 2A. NO existe orden activa: crear nuevo registro con estado 'abierta'
+      const total = newCartItems.reduce((sum, i) => sum + (Number(i.preco) * Number(i.qtd)), 0);
+      const newOrderRecord = {
+        mesa: mesa,
+        items: newCartItems,
+        total: total,
+        estado: 'abierta'
+      };
+
+      const { error: insertError } = await window.alfornoSupabase
+        .from('pedidos')
+        .insert([newOrderRecord]);
+
+      if (insertError) throw insertError;
+    }
+
+    // Limpiar carrito tras éxito
     cart = [];
-    saveCart(); updateCart();
+    saveCart(); 
+    updateCart();
     closeDrawer();
     document.getElementById('success').classList.add('show');
-  }catch(error){
-    console.error("Erro detalhado:", error);
-    alert("Erro Supabase: " + (error.message || JSON.stringify(error)));
-  }finally{
+  } catch(error) {
+    console.error("Erro crítico ao enviar pedido:", error);
+    alert("Erro ao enviar pedido: " + (error.message || JSON.stringify(error)));
+  } finally {
     checkoutBtn.disabled = false;
   }
 });
+
 document.getElementById('newOrder').addEventListener('click',()=>{
   document.getElementById('success').classList.remove('show');
 });
 
-// init
-render(); updateCart();
+// Init
+render(); 
+updateCart();
 
 // Service Worker
 if('serviceWorker' in navigator){

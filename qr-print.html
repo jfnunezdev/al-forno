@@ -59,7 +59,7 @@ body{
   <div class="brand">AL FORNO</div>
   <div class="sub">Pizzaria Rústica</div>
   <div class="mesa" id="mesaLabel">Mesa 1</div>
-  <div class="qr"><img id="qrImg" src="" alt="QR Code"></div>
+  <div class="qr"><img id="qrImg" alt="QR Code"></div>
   <p class="hint">Escaneie o código com a câmera do celular para abrir o cardápio digital da sua mesa.</p>
   <div class="controls">
     <button onclick="changeMesa(-1)">-</button>
@@ -88,7 +88,7 @@ function detectLocalIP(cb){
 function getBase(){
   let b = localStorage.getItem('alforno_baseurl');
   if(!b){
-    b = 'https://jfnunezdev.github.io/al-forno1';
+    b = window.location.href.split('?')[0].replace('qr-print.html','');
   }
   return b;
 }
