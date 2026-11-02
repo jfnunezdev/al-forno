@@ -283,7 +283,7 @@ function renderOrders(){
 
 async function loadPedidos(){
   try{
-    const { data, error } = await window.alfornoSupabase.from('pedidos').select('*');
+    const { data, error } = await window.alfornoSupabase.from('pedidos').select('*').neq('estado','pago');
     if(error) throw error;
     pedidos = data || [];
     renderOrders();
@@ -381,7 +381,7 @@ function renderTicket(mesa, pedidos){
 function fecharConta(mesa){
   const pedidosMesa = getPedidos().filter(p=>String(p.mesa)===String(mesa));
   if(pedidosMesa.length===0) return;
-  if(!confirm('Fechar conta da Mesa '+mesa+' e imprimir o comprovante? Os pedidos serão removidos após a impressão.')) return;
+  if(!confirm('Fechar conta da Mesa '+mesa+' e imprimir o comprovante? Os pedidos serão marcados como pagos.')) return;
 
   renderTicket(mesa, pedidosMesa);
   mesaParaFechar = mesa;
@@ -404,10 +404,10 @@ window.addEventListener('afterprint', ()=>{
   if(mesaParaFechar === null) return;
   const mesa = mesaParaFechar;
   mesaParaFechar = null;
-  window.alfornoSupabase.from('pedidos').delete().eq('mesa', mesa).then(({error})=>{
-    if(error){ console.error('Erro ao remover pedidos fechados do Supabase:', error); return; }
+  window.alfornoSupabase.from('pedidos').update({estado:'pago'}).eq('mesa', mesa).neq('estado','pago').then(({error})=>{
+    if(error){ console.error('Erro ao marcar pedidos como pagos no Supabase:', error); return; }
     loadPedidos();
-  }).catch(error=>console.error('Erro ao remover pedidos fechados do Supabase:', error));
+  }).catch(error=>console.error('Erro ao marcar pedidos como pagos no Supabase:', error));
 });
 
 window.alfornoSupabase.channel('pedidos')
