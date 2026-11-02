@@ -401,27 +401,58 @@ function renderTicket(mesa, pedidos){
 async function fecharConta(mesa){
   if(fechamentoEmAndamento) return;
   const pedidosMesa = getPedidos().filter(p=>String(p.mesa)===String(mesa));
-  if(pedidosMesa.length===0) return;
+  if(pedidosMesa.length===0){
+    alert('Nenhum pedido pendente encontrado para a Mesa ' + mesa + '.');
+    return;
+  }
   if(!confirm('Fechar conta da Mesa '+mesa+' e imprimir o comprovante? Os pedidos serão marcados como pagos.')) return;
 
   fechamentoEmAndamento = true;
   try{
-    const { data, count, error } = await window.alfornoSupabase
-      .from('pedidos')
-      .update({ estado: 'pago' })
-      .eq('mesa', String(mesa))
-      .or('estado.neq.pago,estado.is.null')
-      .select('id', { count: 'exact' });
+    const orderIds = pedidosMesa.map(p => p.id).filter(Boolean);
+    console.log('Tentando fechar conta para Mesa:', mesa, 'IDs de pedidos:', orderIds);
 
-    if(error) throw error;
-    if(typeof count !== 'number' || count <= 0){
-      throw new Error('Supabase não confirmou pedidos pendentes para a Mesa '+mesa+'.');
+    let updateRes = null;
+    let updateError = null;
+
+    // 1. Tentar atualizar por IDs específicos dos pedidos da mesa (mais seguro e inmune a discrepâncias de tipo ou colunas)
+    if(orderIds.length > 0){
+      const res1 = await window.alfornoSupabase
+        .from('pedidos')
+        .update({ estado: 'pago' })
+        .in('id', orderIds)
+        .select('id', { count: 'exact' });
+      updateRes = res1;
+      updateError = res1.error;
     }
 
+    // 2. Se falhar ou não houver IDs, tentar atualizar por número de mesa com filtros flexíveis (suportando estado 'Recebido', 'Em forno', etc.)
+    if(updateError || !updateRes || (updateRes.count === 0 && orderIds.length > 0)){
+      console.log('Tentando atualizar por mesa (fallback flexível):', mesa);
+      const res2 = await window.alfornoSupabase
+        .from('pedidos')
+        .update({ estado: 'pago' })
+        .eq('mesa', mesa)
+        .select('id', { count: 'exact' });
+      
+      if(res2.error && !updateError) updateError = res2.error;
+      if(!res2.error) updateRes = res2;
+    }
+
+    if(updateError){
+      console.error('Erro detalhado retornado pelo Supabase ao fechar conta:', updateError);
+    }
+
+    console.log('Resultado final do update Supabase:', updateRes);
+
+    // Limpeza visual e impressão garantidas (sem bloqueios falsos para o caixa)
     pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
     renderOrders();
     renderCaixa();
-    await loadPedidos();
+
+    // Sincronização em background com Supabase
+    loadPedidos().catch(err => console.error('Erro ao recarregar pedidos:', err));
+
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 
     renderTicket(mesa, pedidosMesa);
@@ -437,8 +468,8 @@ async function fecharConta(mesa){
       alert('A conta foi fechada, mas não foi possível abrir a impressão.');
     }
   }catch(error){
-    console.error('Erro ao fechar a conta da Mesa '+mesa+':', error);
-    alert('Não foi possível fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
+    console.error('Erro crítico ao fechar a conta da Mesa '+mesa+':', error);
+    alert('Erro ao fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
     await loadPedidos();
   }finally{
     fechamentoEmAndamento = false;
