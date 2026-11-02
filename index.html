@@ -285,7 +285,7 @@ async function loadPedidos(){
   try{
     const { data, error } = await window.alfornoSupabase.from('pedidos').select('*').neq('estado','pago');
     if(error) throw error;
-    pedidos = data || [];
+    pedidos = (data || []).filter(p=>p.estado !== 'pago');
     renderOrders();
     renderCaixa();
   }catch(error){
@@ -335,6 +335,7 @@ function showBill(mesa){
 }
 
 let mesaParaFechar = null;
+let fechamentoEmAndamento = false;
 
 function renderTicket(mesa, pedidos){
   const agg = {};
@@ -401,13 +402,35 @@ window.addEventListener('afterprint', ()=>{
   if(pageStyle) pageStyle.remove();
   document.getElementById('ticket').innerHTML = '';
 
-  if(mesaParaFechar === null) return;
+  if(mesaParaFechar === null || fechamentoEmAndamento) return;
   const mesa = mesaParaFechar;
   mesaParaFechar = null;
-  window.alfornoSupabase.from('pedidos').update({estado:'pago'}).eq('mesa', mesa).neq('estado','pago').then(({error})=>{
-    if(error){ console.error('Erro ao marcar pedidos como pagos no Supabase:', error); return; }
-    loadPedidos();
-  }).catch(error=>console.error('Erro ao marcar pedidos como pagos no Supabase:', error));
+  fechamentoEmAndamento = true;
+  (async()=>{
+    try{
+      const {data, error} = await window.alfornoSupabase
+        .from('pedidos')
+        .update({estado:'pago'})
+        .eq('mesa', mesa)
+        .neq('estado','pago')
+        .select('id');
+      if(error) throw error;
+      if(!data || data.length===0){
+        throw new Error('Nenhum pedido pendente foi atualizado para a mesa '+mesa+'.');
+      }
+
+      pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
+      renderOrders();
+      renderCaixa();
+      await loadPedidos();
+    }catch(error){
+      console.error('Erro ao marcar pedidos como pagos no Supabase:', error);
+      alert('Não foi possível fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
+      await loadPedidos();
+    }finally{
+      fechamentoEmAndamento = false;
+    }
+  })();
 });
 
 window.alfornoSupabase.channel('pedidos')
