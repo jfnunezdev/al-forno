@@ -283,7 +283,10 @@ function renderOrders(){
 
 async function loadPedidos(){
   try{
-    const { data, error } = await window.alfornoSupabase.from('pedidos').select('*').neq('estado','pago');
+    const { data, error } = await window.alfornoSupabase
+      .from('pedidos')
+      .select('*')
+      .or('estado.neq.pago,estado.is.null');
     if(error) throw error;
     pedidos = (data || []).filter(p=>p.estado !== 'pago');
     renderOrders();
@@ -386,15 +389,12 @@ async function fecharConta(mesa){
 
   fechamentoEmAndamento = true;
   try{
-    const {count, error} = await window.alfornoSupabase
+    const {error} = await window.alfornoSupabase
       .from('pedidos')
-      .update({estado:'pago'}, {count:'exact'})
+      .update({estado:'pago'})
       .eq('mesa', mesa)
-      .neq('estado', 'pago');
+      .or('estado.neq.pago,estado.is.null');
     if(error) throw error;
-    if(!count){
-      throw new Error('Nenhum pedido pendente foi atualizado para a mesa '+mesa+'.');
-    }
 
     pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
     renderOrders();
