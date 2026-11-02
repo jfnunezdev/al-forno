@@ -408,12 +408,15 @@ async function fecharConta(mesa){
 
   fechamentoEmAndamento = true;
   try{
-    const {error} = await window.alfornoSupabase
+    const {count, error} = await window.alfornoSupabase
       .from('pedidos')
-      .update({estado:'pago'})
+      .update({estado:'pago'}, {count:'exact'})
       .eq('mesa', mesa)
       .or('estado.neq.pago,estado.is.null');
     if(error) throw error;
+    if(!Number.isInteger(count) || count <= 0){
+      throw new Error('Supabase não confirmou pedidos pendentes para a Mesa '+mesa+'.');
+    }
 
     pedidos = pedidos.filter(p=>String(p.mesa)!==String(mesa));
     renderOrders();
@@ -427,9 +430,14 @@ async function fecharConta(mesa){
     pageStyle.textContent = '@page{size:80mm auto;margin:4mm}';
     document.head.appendChild(pageStyle);
     document.body.classList.add('printing-ticket');
-    setTimeout(()=>window.print(), 60);
+    try{
+      window.print();
+    }catch(printError){
+      console.error('A conta foi fechada, mas a impressão falhou:', printError);
+      alert('A conta foi fechada, mas não foi possível abrir a impressão.');
+    }
   }catch(error){
-    console.error('Erro ao marcar pedidos como pagos no Supabase:', error);
+    console.error('Erro ao fechar a conta da Mesa '+mesa+':', error);
     alert('Não foi possível fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
     await loadPedidos();
   }finally{
