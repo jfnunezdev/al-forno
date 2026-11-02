@@ -1,5 +1,5 @@
 ﻿// Service Worker - AL FORNO PWA
-const CACHE_NAME = 'alforno-cache-v13';
+const CACHE_NAME = 'alforno-cache-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -52,6 +52,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  if (new URL(event.request.url).pathname.endsWith('/supabase.js')) {
+    event.respondWith(fetch(event.request, {cache: 'no-store'}));
+    return;
+  }
   const isNav = event.request.mode === 'navigate' || (event.request.headers.get('accept') || '').includes('text/html');
   if (isNav) {
     event.respondWith(
