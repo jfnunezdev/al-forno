@@ -1,5 +1,5 @@
 ﻿// Service Worker - AL FORNO PWA
-const CACHE_NAME = 'alforno-cache-v15';
+const CACHE_NAME = 'alforno-cache-v16';
 const ASSETS = [
   './',
   './index.html',
@@ -53,11 +53,16 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  if (new URL(event.request.url).pathname.endsWith('/supabase.js')) {
-    event.respondWith(fetch(event.request, {cache: 'no-store'}));
+  const url = new URL(event.request.url);
+
+  // NUNCA cachear ni interceptar peticiones a Supabase API (evita datos obsoletos / stale cache)
+  if (url.hostname.includes('supabase.co')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
+
+  if (event.request.method !== 'GET') return;
+
   const isNav = event.request.mode === 'navigate' || (event.request.headers.get('accept') || '').includes('text/html');
   if (isNav) {
     event.respondWith(
