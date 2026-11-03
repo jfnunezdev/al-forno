@@ -188,7 +188,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <section class="section" id="tab-pedidos">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <h3 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--accent-color)">Pedidos Recebidos</h3>
-    <button id="refreshBtn" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-main);font-size:13px">Atualizar</button>
+    <button id="refreshBtn" onclick="loadPedidos()" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-main);font-size:13px">Atualizar</button>
   </div>
   <div class="orders-grid" id="ordersGrid"></div>
 </section>
@@ -263,56 +263,58 @@ let recarregarPedidos = false;
 function getPedidos(){ return pedidos; }
 function fmt(v){ return 'R$ ' + (Number(v)||0).toFixed(2).replace('.',','); }
 
+function getItems(p){
+  if(Array.isArray(p.items)) return p.items;
+  if(typeof p.items === 'string'){
+    try{ return JSON.parse(p.items); }catch(e){ return []; }
+  }
+  return [];
+}
+
 function renderOrders(){
   const list = getPedidos();
   const grid = document.getElementById('ordersGrid');
+  if(!grid) return;
   if(list.length===0){ grid.innerHTML='<div class="empty">Nenhum pedido ativo no momento.</div>'; return; }
   
-  grid.innerHTML = list.map(p=>`
+  grid.innerHTML = list.map(p=>{
+    const items = getItems(p);
+    return `
     <div class="order-card">
       <div class="order-head">
         <span class="order-id">ID: ${p.id}</span>
         <span class="order-mesa">Mesa ${p.mesa}</span>
       </div>
       <div class="order-items">
-        ${(p.items || []).map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>${fmt(Number(i.preco||0)*Number(i.qtd||1))}</span></div>`).join('')}
+        ${items.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>${fmt(Number(i.preco||0)*Number(i.qtd||1))}</span></div>`).join('')}
       </div>
       <div class="order-total"><span>Total</span><span>${fmt(p.total)}</span></div>
       <div class="status-row">
         ${statusList.map(s=>`<button class="status-btn ${p.estado===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-function loadPedidos(){
-  if(pedidosLoadPromise){
-    recarregarPedidos = true;
-    return pedidosLoadPromise;
+async function loadPedidos(){
+  console.log('loadPedidos chamado');
+  try{
+    const { data, error } = await window.alfornoSupabase
+      .from('pedidos')
+      .select('*');
+    if(error) throw error;
+    console.log('Dados brutos de pedidos:', data);
+    
+    pedidos = (data || []).filter(p => p.estado !== 'pago' && p.estado !== 'cerrada');
+    console.log('Pedidos ativos filtrados:', pedidos);
+    
+    renderOrders();
+    renderCaixa();
+  }catch(error){
+    console.error('Erro ao carregar pedidos do Supabase:', error);
+    const grid = document.getElementById('ordersGrid');
+    if(grid) grid.innerHTML='<div class="empty">Não foi possível carregar os pedidos.</div>';
   }
-  pedidosLoadPromise = Promise.resolve().then(async()=>{
-    try{
-      do{
-        recarregarPedidos = false;
-        try{
-          const { data, error } = await window.alfornoSupabase
-            .from('pedidos')
-            .select('*');
-          if(error) throw error;
-          
-          // Filtrar órdenes activas (excluir 'pago' y 'cerrada')
-          pedidos = (data || []).filter(p => p.estado !== 'pago' && p.estado !== 'cerrada');
-          renderOrders();
-          renderCaixa();
-        }catch(error){
-          console.error('Erro ao carregar pedidos do Supabase:', error);
-          document.getElementById('ordersGrid').innerHTML='<div class="empty">Não foi possível carregar os pedidos.</div>';
-        }
-      }while(recarregarPedidos);
-    }finally{
-      pedidosLoadPromise = null;
-    }
-  });
-  return pedidosLoadPromise;
 }
 
 async function setStatus(id,status){
@@ -345,7 +347,7 @@ function showBill(mesa){
 
   // Consolidar todos los ítems de los pedidos de esa mesa
   const agg = {};
-  pedidosMesa.forEach(p=>(p.items || []).forEach(i=>{
+  pedidosMesa.forEach(p=>getItems(p).forEach(i=>{
     const nome = i.nome;
     if(!agg[nome]) agg[nome]={qtd:0,preco:Number(i.preco)||0};
     agg[nome].qtd += Number(i.qtd)||0;
@@ -367,7 +369,7 @@ let fechamentoEmAndamento = false;
 
 function renderTicket(mesa, pedidosMesa){
   const agg = {};
-  pedidosMesa.forEach(p=>(p.items || []).forEach(i=>{
+  pedidosMesa.forEach(p=>getItems(p).forEach(i=>{
     const nome = i.nome;
     if(!agg[nome]) agg[nome]={qtd:0,preco:Number(i.preco)||0};
     agg[nome].qtd += Number(i.qtd)||0;
@@ -434,18 +436,16 @@ async function fecharConta(mesa){
       console.error('Falha na impressão:', printError);
     }
 
-    // Actualizar estado en Supabase a 'cerrada' (o 'pago') para que desaparezca de inmediato
+    const idsToClose = pedidosMesa.map(p => p.id);
     const { error } = await window.alfornoSupabase
       .from('pedidos')
       .update({ estado: 'cerrada' })
-      .eq('mesa', mesa);
+      .in('id', idsToClose);
 
     if(error) throw error;
 
-    // Actualizar estado local y UI instantáneamente
-    pedidos = pedidos.filter(p => String(p.mesa) !== String(mesa));
-    renderOrders();
-    renderCaixa();
+    // Recargar desde Supabase y actualizar UI
+    await loadPedidos();
   }catch(error){
     console.error('Erro crítico ao fechar a conta da Mesa '+mesa+':', error);
     alert('Erro ao fechar a conta da Mesa '+mesa+': '+(error.message || JSON.stringify(error)));
