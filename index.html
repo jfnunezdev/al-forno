@@ -272,28 +272,32 @@ function getItems(p){
 }
 
 function renderOrders(){
-  const list = getPedidos();
-  const grid = document.getElementById('ordersGrid');
-  if(!grid) return;
-  if(list.length===0){ grid.innerHTML='<div class="empty">Nenhum pedido ativo no momento.</div>'; return; }
-  
-  grid.innerHTML = list.map(p=>{
-    const items = getItems(p);
-    return `
-    <div class="order-card">
-      <div class="order-head">
-        <span class="order-id">ID: ${p.id}</span>
-        <span class="order-mesa">Mesa ${p.mesa}</span>
-      </div>
-      <div class="order-items">
-        ${items.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>${fmt(Number(i.preco||0)*Number(i.qtd||1))}</span></div>`).join('')}
-      </div>
-      <div class="order-total"><span>Total</span><span>${fmt(p.total)}</span></div>
-      <div class="status-row">
-        ${statusList.map(s=>`<button class="status-btn ${p.estado===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+  try{
+    const list = getPedidos();
+    const grid = document.getElementById('ordersGrid');
+    if(!grid) return;
+    if(list.length===0){ grid.innerHTML='<div class="empty">Nenhum pedido ativo no momento.</div>'; return; }
+    
+    grid.innerHTML = list.map(p=>{
+      const items = getItems(p);
+      return `
+      <div class="order-card">
+        <div class="order-head">
+          <span class="order-id">ID: ${p.id}</span>
+          <span class="order-mesa">Mesa ${p.mesa}</span>
+        </div>
+        <div class="order-items">
+          ${items.map(i=>`<div class="order-item"><span>${i.qtd}x ${i.nome}</span><span>${fmt(Number(i.preco||0)*Number(i.qtd||1))}</span></div>`).join('')}
+        </div>
+        <div class="order-total"><span>Total</span><span>${fmt(p.total)}</span></div>
+        <div class="status-row">
+          ${statusList.map(s=>`<button class="status-btn ${p.estado===s?'active':''}" onclick="setStatus('${p.id}','${s}')">${s}</button>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(err){
+    console.error('Erro em renderOrders:', err);
+  }
 }
 
 async function loadPedidos(){
